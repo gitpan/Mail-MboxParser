@@ -1,0 +1,16 @@
+Changelog
+MANIFEST
+Makefile.PL
+MboxParser.pm
+MboxParser/Base.pm
+MboxParser/Mail.pm
+MboxParser/SpamDetector.pm
+README
+eg/isspam
+eg/store_att.pl
+t/1mboxp.t
+t/2mbox.t
+t/3mbox.t
+t/4mbox.t
+t/autoload.t
+t/testbox

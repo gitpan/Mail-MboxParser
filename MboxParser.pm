@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.24 2001/08/18 09:07:10 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.26 2001/08/24 14:04:04 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -18,7 +18,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.13";
+$VERSION	= "0.14";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -266,17 +266,17 @@ Sorry, no documentation on that yet before this is properly implemented. You can
 
 =back
 
-Shared methods for both mailbox- and mail-objects come below. These are about error-handling so you should read the section ERROR-HANDLING as well.
+Common methods for both mailbox- and mail-objects come below. These are about error-handling so you should read the section ERROR-HANDLING as well.
 
 =over 4
 
 =item B<error>
 
-Call this immediately after one of the methods above that mention a possible error-message. Once called, the buffer for the error-message is cleared since only the _last_ error is stored.
+Call this immediately after one of the methods above that mention a possible error-message. 
 
 =item B<log>
 
-Sort of internal weirdnesses are recorded here. Again only the last event is saved and erased after you called this method.
+Sort of internal weirdnesses are recorded here. Again only the last event is saved.
 
 =back 
 
@@ -312,7 +312,7 @@ You guess it.
 
 =item B<$mail->{TOP_ENTITY}>
 
-The top-level MIME::Entity of a message. You can call any suitable methods from the MIME::tools upon this object to give you more specific access to MIME-parts.
+The top-level MIME::Entity of a message. Technically speaking, the message itself from the perspective of MIME::Entity.
 
 This field is undefined until one of the MIME-methods (num_entities, get_entities etc.) is called for the sake of efficiency.
 

@@ -1,4 +1,4 @@
-$Id: README,v 1.4 2001/07/27 18:31:37 parkerpine Exp $
+$Id: README,v 1.5 2001/08/24 09:30:31 parkerpine Exp $
 
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient which has not been intended anyway.
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ access to header fields, body and MIME-parts. It is for those people who find the above two module-sets too confusing. See the list of provided methods below.

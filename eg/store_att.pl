@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id$
+# $Id: store_att.pl,v 1.2 2001/08/24 09:30:31 parkerpine Exp $
 
 use strict;
 #use lib "../../";

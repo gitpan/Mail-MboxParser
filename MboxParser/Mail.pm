@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.22 2001/08/18 09:08:02 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.25 2001/08/24 14:04:04 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -16,13 +16,15 @@ use Carp;
 
 use strict;
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT @ISA);
-$VERSION    = "0.13";
+use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
+$VERSION    = "0.14";
 @EXPORT     = qw();
-@ISA		= qw(Mail::MboxParser::Base MIME::Entity);
+@ISA		= qw(Mail::MboxParser::Base);
 $^W++;
 
 my $Parser = new MIME::Parser; $Parser->output_to_core(1);
+
+use overload '""' => \&as_string, fallback => 1;
 
 sub init (@) {
 	my ($self, $args) = @_;
@@ -45,8 +47,7 @@ sub header() {
 sub body() { 
 	my $self = shift;
 	$self->reset_last;
-	
-	return $self->{BODY}; 
+	return Mail::MboxParser::Mail::Body->new($self->{BODY});	
 }
 
 sub from() {
@@ -81,39 +82,27 @@ sub id() {
 sub num_entities() { 
 	my $self = shift;
 	$self->reset_last;
-
-	my @ents = $self->get_entities;
-	return scalar @ents;
+	# force list contest becaus of wantarray in get_entities
+	$self->{NUM_ENT} = () = $self->get_entities unless defined $self->{NUM_ENT};
+	return $self->{NUM_ENT};
 }
 
-sub get_entities(;$) {
+sub get_entities(@) {
 	my $self = shift;
-	my $num  = shift;
 	$self->reset_last;
-
-	my @parts;
 	if (ref $self->{TOP_ENTITY} ne 'MIME::Entity') {
 		$self->{TOP_ENTITY} = 
 			$Parser->parse_data($self->{HEADER}.$self->{BODY});
 	}
-	if ($num) {
-		eval { push @parts, $self->{TOP_ENTITY}->parts($num); };
-		$self->{LAST_LOG} = $@ if $@;
-	}
-	else {
-		eval { push @parts, $self->{TOP_ENTITY}->parts; };
-		$self->{LAST_LOG} = $@ if $@;
-	}
-	if (@parts == 1) 	{ return $parts[0] }
-	else 				{ return @parts }
+	my @parts = eval { $self->{TOP_ENTITY}->parts(@_); };
+	$self->{LAST_LOG} = $@ if $@;
+
+	return wantarray ? @parts : $parts[0];
 }
 
 # just overriding MIME::Entity::parts() 
 # to work around its strange behaviour
-sub parts(;$) {
-	my ($self, $arg) = @_;
-	$self->get_entities($arg);
-}
+sub parts(;$) { shift->get_entities(@_) }
 
 sub get_entity_body($) {
 	my $self = shift;
@@ -160,12 +149,11 @@ a coderef. Using filename from header instead
 EOW
 		undef $code; undef @args;
 	}
-	
+
 	if ($num < $self->num_entities) {
-		my $file;
-		eval { $file = $self->get_entities($num)->head->recommended_filename; };
+		my $file = eval { 
+			$self->get_entities($num)->head->recommended_filename; };
 		$self->{LAST_LOG} = $@;
-		
 		if (not $file) {
 			$self->{LAST_ERR} = "No attachement in entity $num";
 			return;
@@ -230,6 +218,10 @@ sub is_spam(;@) {
 	return $detector->classify;
 }
 
+sub as_string {
+	my $self = shift;
+	return $self->{HEADER}.$self->{BODY};
+}
 
 sub _recipients($) {
 	my ($self, $field) = @_;
@@ -278,10 +270,46 @@ sub split_header {
 	return {%header};
 }
 
+sub AUTOLOAD {
+	my ($self, @args) = @_;
+	(my $call = $AUTOLOAD) =~ s/.*\:\://;
+	
+	# create some dummy objects to use with can() unless we have some
+	my @dummies;
+	if (ref $self->{TOP_ENTITY} eq 'MIME::Entity') {
+		push @dummies, $self->{TOP_ENTITY}; 
+	}
+	else  {
+		push @dummies, MIME::Entity->new;
+	}
+	
+	# test some potential classes that might implement $call
+	for my $class (@dummies) {
+		# we found a Class that implements $call
+		if ($class->can($call)) {
+			if (ref $class eq 'MIME::Entity') {
+				no strict "refs";
+				$self->{TOP_ENTITY} = 
+					$Parser->parse_data($self->{HEADER}.$self->{BODY})
+						if ref $self->{TOP_ENTITY} ne 'MIME::Entity';
+				return $self->{TOP_ENTITY}->$call(@args);
+			}
+
+			if (ref $class eq 'Mail::Internet') {
+				no strict "refs";
+				return Mail::Internet->new(
+					[ split /\n/, $self->{HEADER}.$self->{BODY} ] 
+					);
+			}
+		}
+	}	
+}
+
 sub DESTROY {
 	my $self = shift;
 	undef $self;
 }
+
 
 1;
 
@@ -299,7 +327,7 @@ See L<Mail::MboxParser> for examples on usage.
 
 Mail::MboxParser::Mail objects are usually not created directly though, in theory, they could be. A description of the provided methods can be found in L<Mail::MboxParser>.
 
-However, go on reading if you want to use methods from MIME::Entity.
+However, go on reading if you want to use methods from MIME::Entity and learn about overloading.
 
 =head1 EXTERNAL METHODS
 
@@ -314,6 +342,10 @@ effective_type() is not implemented by Mail::MboxParser::Mail and thus the corre
 
 To learn about what methods might be useful for you, you should read the "Access"-part of the section "PUBLIC INTERFACE" in the MIME::Entity manpage.
 It may become handy if you have mails with a lot of MIME-parts and you not just want to handle binary-attachements but any kind of MIME-data.
+
+=head1 OVERLOADING
+
+Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fancy feature of Perl and some other languages (C++ for instance) which will change the behaviour of an object when one of those overloaded operators is applied onto it. Here you get the stringified mail when you write "$mail" while otherwise you'd get the stringified reference: Mail::MboxParser::Mail=HASH(...).
 
 =head1 AUTHOR AND COPYRIGHT
 

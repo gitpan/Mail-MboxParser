@@ -1,4 +1,13 @@
-# $Id: Changelog,v 1.14 2001/08/18 09:06:46 parkerpine Exp $
+# $Id: Changelog,v 1.15 2001/08/24 10:26:45 parkerpine Exp $
+
+v0.14 (Fri Aug 24 12:23:36 CEST 2001):
+	+ added an AUTOLOADer for Mail::MboxParser::Mail which will 
+	  usually care that any methods inherited from MIME::Entity
+	  work (mostly) in the expected way
+	  nice side-effect: saves memory
+	+ overloading of " " for Mail::MboxParser::Mail
+	+ fixed some factually wrong documentation
+	+ finally a MANIFEST in the package
 
 v0.13 (Sat Aug 18 11:04:54 CEST 2001):
 	+ new to()-equivalent cc()
