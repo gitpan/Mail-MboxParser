@@ -1,4 +1,14 @@
-# $Id: Changelog,v 1.35 2002/02/21 08:56:19 parkerpine Exp $
+# $Id: Changelog,v 1.37 2002/03/01 10:10:27 parkerpine Exp $
+
+v0.32 (Fri Mar  1 10:34:46 CET 2002)
+
+    + fixed Mail::MboxParser::Mail::get_field() which was broken
+      in between, behaviour of it also changed a little to make it
+      more useful (see docs)
+    + added fix for header-fields that only contained the name, eg.
+      'Subject:'
+    + minimal corrections in some docs
+    + added two tests for get_field()
 
 v0.31 (Thu Feb 21 09:54:11 CET 2002)
 

@@ -46,6 +46,9 @@ Installation:
     ppm> set repository sourceforge http://mail-mboxparser.sourceforge.net/ 
     ppm> search Mail-MboxParser             <== optional!
     ppm> install Mail-MboxParser-$VERSION
+         [or possibly just:
+         install Mail-MboxParser
+         ]
 
 
 
@@ -120,6 +123,4 @@ mailed to me.
 
 Tassilo v. Parseval
 <tassilo.parseval@post.rwth-aachen.de>
-
-	
 

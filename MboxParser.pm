@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.53 2002/02/21 09:06:14 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.54 2002/03/01 09:34:39 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -71,7 +71,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.31";
+$VERSION	= "0.32";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -135,10 +135,10 @@ When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonym
 =cut
 
 sub init (@) {
-	my ($self, @args) = @_;
+    my ($self, @args) = @_;
 
     if (@args == 0) {
-		croak <<EOC;
+        croak <<EOC;
 Error: open needs either a filename, a filehande (as glob-ref) or a 
 (scalar/array)-referece variable as first argument.
 EOC
@@ -238,7 +238,7 @@ sub get_messages() {
     local $/ = $self->{NL};
     
 	my ($in_header, $in_body) = (0, 0);
-	my ($header, $body);
+	my $header;
 	my (@header, @body);
 	my $h = $self->{READER};
 
@@ -264,13 +264,12 @@ sub get_messages() {
 		# out of data, store message in Mail-object
         if ((/$from_date/ || eof) && $got_header) {
             push @body, $_ if eof; # don't forget last line!!
-			$body 	= join '', @body;
 			my $m = Mail::MboxParser::Mail->new([ @header ], 
-												$body, 
+												join('', @body), 
 												$self->{CONFIG});
 			push @messages, $m;
 			($in_header, $in_body) = (1, 0);
-			($header, $body) = (undef, undef);
+			undef $header;
 			(@header, @body) = ();
 			$got_header = 0;
 		}
@@ -335,14 +334,14 @@ This lets you iterate over a mailbox one mail after another. The great advantage
 
 sub next_message() {
     my $self = shift;
+    $self->reset_last;
 
     local $/ = $self->{NL};
     
-    $self->reset_last;
     my $h    = $self->{READER};
 
 	my ($in_header, $in_body) = (0, 0);
-	my ($header, $body);
+	my $header;
 	my (@header, @body);
 
 	my $got_header = 0;
@@ -357,7 +356,7 @@ sub next_message() {
             }
             else {
                 $self->{CURR_POS} = tell($h) - length;
-                return Mail::MboxParser::Mail->new([@header],
+                return Mail::MboxParser::Mail->new([ @header ],
                                                    join ('', @body),
                                                    $self->{CONFIG});
             }

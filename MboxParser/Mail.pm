@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.50 2002/02/21 09:06:14 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.52 2002/03/01 10:09:32 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.29";
+$VERSION    = "0.30";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -254,7 +254,14 @@ sub make_convertable(@) {
 
 =item B<get_field(headerfield)>
 
-Returns the specified raw field from the message header, that is: no transformation or decoding is done. Returns multiple lines as needed if the field is "Received" or another multi-line field.  Not case sensitive.
+Returns the specified raw field from the message header, that is: the fieldname is not stripped off nor is any decoding done. Returns multiple lines as needed if the field is "Received" or another multi-line field.  Not case sensitive.
+
+C<get_field> always returns one string regardless of how many times the field occured in the header. Multiple occurances are separated by a newline and multiple whitespaces squeezed to one. That means you can process each occurance of the field thusly:
+
+    for my $field ( split /\n/, $msg->get_field('received') ) {
+        # do something with $field
+    }
+
 Sets $mail->error() if the field was not found in which case get_field() returns undef.
 
 =back
@@ -265,13 +272,27 @@ sub get_field($) {
     my ($self, $fieldname) = @_;
     $self->reset_last;
 
-    my @headerlines = split /$NL/, $self->{HEADER};
+    my @headerlines = ref $self->{HEADER} 
+                            ? @{$self->{HEADER}}
+                            : split /$NL/, $self->{HEADER};
+    chomp @headerlines;
+
     my ($ret, $inretfield);
     foreach my $bit (@headerlines) {
-        if ($bit =~ /^\s/) { if ($inretfield) { $ret .= $bit."\n"; } }
-        elsif ($bit =~ /^$fieldname/i) { ++$inretfield; $ret .= $bit."\n"; }
+        if ($bit =~ /^\s/) { 
+            if ($inretfield) { 
+                $bit =~ s/\s+/ /g;
+                $ret .= $bit; 
+            } 
+        }
+        elsif ($bit =~ /^$fieldname/i) {
+            $bit =~ s/\s+/ /g;
+            if (++$inretfield > 1) { $ret .= "\n" . $bit }
+            else                   { $ret .= $bit }
+        }
         else { $inretfield = 0; }
     }
+    
     $self->{LAST_ERR} = "No such field" if not $ret;
     return $ret;
 }
@@ -297,7 +318,7 @@ sub from() {
 	my $from = $self->header->{from};
 	my ($name, $email) = split /\s\</, $from;
 	$email =~ s/\>$//g unless not $email;
-	if ($name && not $email) {
+	if ($name && ! $email) {
 		$email = $name;
 		$name  = "";
 	}
@@ -704,14 +725,14 @@ This method returns a mapping from attachment-names (if those are savable) to in
         print "$filename => $mapping->{$filename}\n";
     }
 
-If called with a string as argument, it tries to look up this filename. If it can't be found, undef is returned. In this case you also should have an error-massage patiently awaiting you in the return value of $msg->error().
+If called with a string as argument, it tries to look up this filename. If it can't be found, undef is returned. In this case you also should have an error-message patiently awaiting you in the return value of $msg->error().
 
 Even though it looks tempting, don't do the following:
 
     # BAD!
 
     for my $file (qw/file1.ext file2.ext file3.ext file4.ext/) {
-        print "$file is in message" 
+        print "$file is in message ", $msg->id, "\n"  
             if defined $msg->get_attachments($file);
     }
 
@@ -721,7 +742,7 @@ The reason is that B<get_attachments> is currently *not* optimized to cache the 
 
     my $mapping = $msg->get_attachments;
     for my $file (qw/file1.ext file2.ext file3.ext file4.ext/) {
-        print "$file is in message", $msg->id, "\n" 
+        print "$file is in message ", $msg->id, "\n" 
             if exists $mapping->{$file};
     }
 
@@ -769,9 +790,7 @@ sub get_attachments(;$) {
             $self->{LAST_ERR} = "$name: No such attachment";
             return;
         }
-        else {
-            return $mapping{$name};
-        }
+        else { return $mapping{$name} }
     }
     
     if (keys %mapping == 0) {
@@ -792,7 +811,7 @@ sub _recipients($) {
 	$self->reset_last;
 	
 	my $rec = $self->header->{$field};
-	if (not $rec) {
+	if (! $rec) {
 		$self->{LAST_ERR} = "'$field' not in header";
 		return;
 	}
@@ -802,7 +821,7 @@ sub _recipients($) {
 	my @rec_line;
 	for my $pair (@recs) {
 		my ($name, $email) = split /\s</, $pair;
-		$email =~ s/\>$//g unless not $email;
+		$email =~ s/\>$//g if $email;
 		if ($name && ! $email) {
 			$email = $name;
 			$name  = "";
@@ -824,8 +843,8 @@ sub split_header {
 	my @header;
     chomp @headerlines if ref $header;
  	foreach my $bit (@headerlines) {
-		if ($bit =~ s/^\s//) { $header[-1] .= $bit; }
-		else 				 { push @header, $bit; }
+		if ($bit =~ s/^\s//) { $header[-1] .= $bit }
+		else 				 { push @header, $bit }
 	}
 											   
 	my ($key, $value);
@@ -835,8 +854,9 @@ sub split_header {
         if    (/^Received:\s/) { push @{$self->{TRACE}}, substr($_, 10) }
         elsif (/^From /)       { $self->{FROM} = $_ }
         else {
-			$key   = substr $_, 0, index($_, ": ");
-			$value = substr $_, index($_, ": ") + 2;
+            my $idx = index $_, ": ";
+			$key   = substr $_, 0, $idx;
+			$value = $idx != -1 ? substr $_, $idx + 2 : "";
             if ($decode eq 'ALL' || $decode eq 'HEADER') {
                 use MIME::Words qw(:all);
                 $value = decode_mimewords($value); 
@@ -844,7 +864,7 @@ sub split_header {
 			$header{lc($key)} = $value;
 		}
 	}
-	return { %header };
+	return  \%header;
 }
 
 sub AUTOLOAD {
@@ -860,7 +880,8 @@ sub AUTOLOAD {
     }
     
 	# test some potential classes that might implement $call
-    { no strict 'refs';
+    { 
+        no strict 'refs';
     
         for my $class (qw/MIME::Entity Mail::Internet/) {
             eval "require $class";
