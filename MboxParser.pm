@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.47 2002/01/31 09:32:05 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.53 2002/02/21 09:06:14 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -27,10 +27,10 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
     # -----------
     
     # slurping
-	for my $msg ($mb->get_messages) {
-		print $msg->header->{subject}, "\n";
-		$msg->store_all_attachments('/tmp');
-	}
+    for my $msg ($mb->get_messages) {
+        print $msg->header->{subject}, "\n";
+        $msg->store_all_attachments('/tmp');
+    }
 
     # iterating
     while (my $msg = $mb->next_message) {
@@ -70,11 +70,10 @@ use IO::File;
 use Carp;
 
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT @ISA $OS);
-$VERSION	= "0.30";
+use vars qw($VERSION @EXPORT @ISA);
+$VERSION	= "0.31";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
-
 
 my $from_date   = qr/^From (.*)\d{4}\015?$/;
 my $empty_line  = qr/^\015?$/;
@@ -97,19 +96,38 @@ new() can also take a reference to a variable containing the mailbox either as o
 
 The following option(s) may be useful. The value in brackets below the key is default if none given.
 
-	key:      | value:     | description:
-	==========|============|===============================
-	decode    | 'NEVER'    | never decode transfer-encoded
-	(NEVER)   |            | data
-	          |------------|-------------------------------
-	          | 'BODY'     | will decode body into a human-
-	          |            | readable format
-	          |------------|-------------------------------
-	          | 'HEADER'   | will decode header fields if
-	          |            | any is encoded
-	          |------------|-------------------------------
-	          | 'ALL'      | decode any data
+    key:      | value:     | description:
+    ==========|============|===============================
+    decode    | 'NEVER'    | never decode transfer-encoded
+    (NEVER)   |            | data
+              |------------|-------------------------------
+              | 'BODY'     | will decode body into a human-
+              |            | readable format
+              |------------|-------------------------------
+              | 'HEADER'   | will decode header fields if
+              |            | any is encoded
+              |------------|-------------------------------
+              | 'ALL'      | decode any data
+    ==========|============|===============================
+    newline   | 'UNIX'     | UNIXish line-endings 
+    (AUTO)    |            | ("\n" aka \012)
+              |------------|-------------------------------
+              | 'WIN'      | Win32 line-endings
+              |            | ("\n\r" aka \012\015)
+              |------------|-------------------------------
+              | 'AUTO'     | try to do autodetection
+              |------------|-------------------------------
+              | custom     | a user-given value for totally
+              |            | borked mailboxes
+    ==========|============|===============================
 
+
+The 'newline'-option comes in handy if you have a mbox-file that happens to not conform to the rules of your operating-system's character semantics one way or another. One such scenario: You are using the module under Win but deliberately have mailboxes with UNIX-newlines (or the other way round). If you do not give this option, 'AUTO' is assumed and some basic tests on the mailbox are performed. This autoedection is of course not capable of detecting cases where you use something like '#DELIMITER' as line-ending. It can as to yet only distinguish between UNIX and Win32ish newlines. You may be lucky and it even works for Macintoshs. If you have more extravagant wishes, pass a costum value:
+
+    my $mb = new Mail::MboxParser ("mbox", newline => '#DELIMITER');
+
+You can't use regexes here since internally this relies on the $/ var ($INPUT_RECORD_SEPERATOR, that is).
+    
 When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonymous tmp-file is created to hold the data. This procedure is hidden away from the user so there is no need to worry about it. Since a tmp-file acts just like an ordinary mailbox-file you don't need to be concerned about loss of data or so once you have been walking through the mailbox-data. No data will be lost and it'll all be fine and smooth.
 
 =back
@@ -133,8 +151,8 @@ Error: open() can never have an even number of arguments.
 See 'perldoc Mail::MboxParser' on how to call it.
 EOC
 	}
-	$self->open(@args); 
-    binmode $self->{READER} if $^O =~ /Win/;
+	$self->open(@args);     
+
 	$self;
 }
 
@@ -167,23 +185,37 @@ EOC
 		open MBOX, "<$source" or
 			croak "Error: Could not open $source for reading: $!";
 		$self->{READER} = \*MBOX;
-		return;
 	}
 	
 	# a filehandle
 	elsif (ref $source eq 'GLOB' && $source != \*STDIN) { 
 		$self->{READER} = $source;
-		return;
 	}
 
 	# else
-	my $fh = IO::File->new_tmpfile or croak <<EOC;
+    else {
+        my $fh = IO::File->new_tmpfile or croak <<EOC;
 Error: Could not create temporary file. This is very weird.
 EOC
-	if 		(ref $source eq 'SCALAR') 	{ print $fh ${$source} }
-	elsif 	(ref $source eq 'ARRAY')  	{ print $fh @{$source} }
-	elsif   ($source == \*STDIN) 	  	{ print $fh <STDIN> }
-	$self->{READER} = $fh;
+        if 		(ref $source eq 'SCALAR') 	{ print $fh ${$source} }
+        elsif 	(ref $source eq 'ARRAY')  	{ print $fh @{$source} }
+        elsif   ($source == \*STDIN) 	  	{ print $fh <STDIN> }
+        $self->{READER} = $fh;
+    }
+
+    # do line-ending stuff
+    binmode $self->{READER};
+    if (! exists $self->{CONFIG}->{NL}) {
+        $self->{CONFIG}->{NL} = 'AUTO';
+    }
+    
+    my $nl = $self->{CONFIG}->{NL};
+    if    ($nl eq 'UNIX') { $self->{NL} = "\012" }
+    elsif ($nl eq 'WIN')  { $self->{NL} = "\015\012" }
+    elsif ($nl eq 'AUTO') { $self->{NL} = $self->_detect_nl }
+    else                  { $self->{NL} = $nl }
+    $Mail::MboxParser::Mail::NL = $self->{NL};
+
     seek $self->{READER}, 0, 0;
     return;
 }
@@ -202,7 +234,9 @@ Returns an array containing all messages in the mailbox respresented as Mail::Mb
 
 sub get_messages() {
 	my $self = shift;
-	
+
+    local $/ = $self->{NL};
+    
 	my ($in_header, $in_body) = (0, 0);
 	my ($header, $body);
 	my (@header, @body);
@@ -267,6 +301,8 @@ Returns the n-th message (first message has index 0) in a mailbox. Examine C<$mb
 sub get_message($) {
     my ($self, $num) = @_;
     
+    local $/ = $self->{NL};
+    
     $self->reset_last;
     $self->make_index if ! exists $self->{MSG_IDX};
 
@@ -299,6 +335,9 @@ This lets you iterate over a mailbox one mail after another. The great advantage
 
 sub next_message() {
     my $self = shift;
+
+    local $/ = $self->{NL};
+    
     $self->reset_last;
     my $h    = $self->{READER};
 
@@ -420,6 +459,9 @@ You can have a peek at the index if you are interested. The following produces a
 
 sub make_index() {
     my $self = shift;
+
+    local $/ = $self->{NL};
+    
     $self->reset_last;
     my $h    = $self->{READER};
     
@@ -472,6 +514,9 @@ Returns the number of messages in a mailbox. You could naturally also call get_m
 
 sub nmsgs() {
 	my $self = shift;
+
+    local $/ = $self->{NL};
+    
 	if (not $self->{READER}) { return "No mbox opened" }
 	if (not $self->{NMSGS}) {
 		my $h = $self->{READER};
@@ -482,6 +527,30 @@ sub nmsgs() {
 	}
 	return $self->{NMSGS} || "0";	
 }	
+
+# ----------------------------------------------------------------
+
+sub _detect_nl {
+    
+    my $self = shift;
+    my $h = $self->{READER};
+    my $newline;
+    
+    seek $h, 0, 0;
+    while (sysread $h, (my $c), 1) {
+        if (ord($c) == 13) {
+            $newline = "\015";        
+            sysread $h, (my $next), 1;
+            $newline .= "\012" if ord($next) == 10;
+            last;
+        }
+        elsif (ord($c) == 10) {
+            $newline = "\012";
+            last;
+        }
+    }
+    return $newline;
+}
 
 # ----------------------------------------------------------------
 
@@ -633,11 +702,15 @@ Thanks to a number of people who gave me invaluable hints that helped me with Ma
 
 Kenn Frankel (kenn@kenn.cc) kindly patched the broken split-header routine and added get_field().
 
+=head1 VERSION
+
+This is version 0.31.
+
 =head1 AUTHOR AND COPYRIGHT
 
-Tassilo von Parseval <Tassilo.Parseval@post.RWTH-Aachen.de>.
+Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001 Tassilo von Parseval. 
+Copyright (c)  2001-2002 Tassilo von Parseval. 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

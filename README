@@ -1,11 +1,12 @@
-$Id: README,v 1.12 2002/01/31 09:32:05 parkerpine Exp $
+$Id: README,v 1.13 2002/02/21 08:56:19 parkerpine Exp $
 
 There are now packages for PPM available as well! See below the bits on 
 installation to learn how to install those.
 
 --------------------------------------------------------------------------------
 
-Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. 
+Mail::MboxParser is a module for working with UNIX-flavoured mailboxes.
+This document describes version 0.31.
 
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
 access to header fields, body and MIME-parts. It is for those people who 

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.46 2002/01/31 09:58:28 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.50 2002/02/21 09:06:14 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -37,8 +37,8 @@ use Mail::MboxParser::Mail::Convertable;
 use Carp;
 
 use strict;
-use vars qw($VERSION @EXPORT $AUTOLOAD);
-$VERSION    = "0.27";
+use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
+$VERSION    = "0.29";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -265,7 +265,7 @@ sub get_field($) {
     my ($self, $fieldname) = @_;
     $self->reset_last;
 
-    my @headerlines = split /\015?\012/, $self->{HEADER};
+    my @headerlines = split /$NL/, $self->{HEADER};
     my ($ret, $inretfield);
     foreach my $bit (@headerlines) {
         if ($bit =~ /^\s/) { if ($inretfield) { $ret .= $bit."\n"; } }
@@ -493,11 +493,10 @@ Wrong number or type of arguments for store_entity_body. Second argument must
 have the form handle => \*FILEHANDLE.
 EOC
 	}
-    my $handle = $args{handle};
-
+    
+    binmode $args{handle};
 	my $b = $self->get_entity_body($num);
-
-	print $handle $b if defined $b; 
+	print { $args{handle} } $b if defined $b; 
 	return 1;
 }
 
@@ -513,22 +512,25 @@ It is really just a call to store_entity_body but it will take care that the n-t
 
 Unless further 'options' have been given, an attachment (if found) is stored into the current directory under the recommended filename given in the MIME-header. 'options' are specified in key/value pairs:
 
-    key:      | value:       | description:
-    ==========|==============|===============================
-    path      | relative or  | directory to store attachment
-    (".")     | absolute     |
-              | path         |
-    ==========|==============|===============================
-    code      | an anonym    | first argument will be the 
-              | subroutine   | $msg-object, second one the 
-              |              | index-number of the current
-              |              | MIME-part
-              |              | should return a filename for
-              |              | the attachment
-    ==========|==============|===============================
-    args      | additional   | this array-ref will be passed  
-              | arguments as | on to the 'code' subroutine
-              | array-ref    | as a dereferenced array
+    key:       | value:        | description:
+    ===========|===============|===============================
+    path       | relative or   | directory to store attachment
+    (".")      | absolute      |
+               | path          |
+    -----------|---------------|-------------------------------
+    store_only | a compiled    | store only files whose file
+               | regex-pattern | names match this pattern
+    -----------|---------------|-------------------------------
+    code       | an anonym     | first argument will be the 
+               | subroutine    | $msg-object, second one the 
+               |               | index-number of the current
+               |               | MIME-part
+               |               | should return a filename for
+               |               | the attachment
+    -----------|---------------|-------------------------------
+    args       | additional    | this array-ref will be passed  
+               | arguments as  | on to the 'code' subroutine
+               | array-ref     | as a dereferenced array
 
 Example:
 
@@ -544,6 +546,15 @@ This will save the attachment found in the second entity under the name that con
 
 If 'path' does not exist, it will try to create the directory for you.
 
+You can specify to save only files matching a certain pattern. To do that, use the store-only switch:
+
+    $msg->store_attachment(1, path       => "/home/ethan/", 
+                              store_only => qr/\.jpg$/i);
+
+The above will only save files that end on '.jpg', not case-sensitive. You could also use a non-compiled pattern if you want, but that would make for instance case-insensitive matching a little cumbersome:
+
+    store_only => '(?i)\.jpg$'
+    
 Returns the filename under which the attachment has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
 
 =back
@@ -607,14 +618,16 @@ EOW
 		}
 		
 		if (defined $args{code}) { $file = $args{code}->($self, 
-                                                        $num, 
-                                                        @{$args{args}}) }
+                                                         $num, 
+                                                         @{$args{args}}) }
                                                         
         if ($file =~ /^=\?/) { # decode qp if possible
             eval { require MIME::Words; };
             $file = MIME::Words::decode_mimewords($file) if ! $@;
         }
-                                                        
+    
+        return if $file !~ /$args{store_only}/;
+        
 		if (open ATT, ">$path/$file") {
 			$self->store_entity_body($num, handle => \*ATT);
 			close ATT ;
@@ -663,15 +676,16 @@ EOW
 		delete @args{ qw(code args) };
 	}
 	my @files;
+
+    if (! exists $args{path} || $args{path} eq '') {
+        $args{path} = '.';
+    }
+    
 	for (0 .. $self->num_entities - 1) {
-		push @files, $self->store_attachment(  $_, 
-                                                path => $args{path} || ".",
-                                                code => $args{code},
-                                                args => $args{args});
-                                               
-                                               
+		push @files, $self->store_attachment($_, %args);
 	}
-	$self->{LAST_ERR} = "Found no attachment at all" if @files == 0;
+
+	$self->{LAST_ERR} = "Found no attachment at all" if ! @files; 
 	return @files;
 }
 
@@ -789,7 +803,7 @@ sub _recipients($) {
 	for my $pair (@recs) {
 		my ($name, $email) = split /\s</, $pair;
 		$email =~ s/\>$//g unless not $email;
-		if ($name and not $email) {
+		if ($name && ! $email) {
 			$email = $name;
 			$name  = "";
 		}
@@ -801,10 +815,11 @@ sub _recipients($) {
 
 # patch provided by Kenn Frankel
 sub split_header {
+    local $/ = $NL;
 	my ($self, $header, $decode) = @_;
 	my @headerlines = ref $header 
                         ? @{$header}
-                        : split /\015?\012/, $header;
+                        : split /$NL/, $header;
 
 	my @header;
     chomp @headerlines if ref $header;
@@ -915,14 +930,22 @@ It may become handy if you have mails with a lot of MIME-parts and you not just 
 
 Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fancy feature of Perl and some other languages (C++ for instance) which will change the behaviour of an object when one of those overloaded operators is applied onto it. Here you get the stringified mail when you write "$mail" while otherwise you'd get the stringified reference: Mail::MboxParser::Mail=HASH(...).
 
+=head1 VERSION
+
+This is version 0.31.
+
 =head1 AUTHOR AND COPYRIGHT
 
-Tassilo von Parseval <Tassilo.Parseval@post.RWTH-Aachen.de>.
+Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001 Tassilo von Parseval.
+Copyright (c)  2001-2002 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =head1 SEE ALSO
+
+L<MIME::Entity>
+
+L<Mail::MboxParser>, L<Mail::MboxParser::Mail::Body>, L<Mail::MboxParser::Mail::Convertable>
 
 =cut

@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Base.pm,v 1.3 2001/12/07 17:37:16 parkerpine Exp $
+# Version: $Id: Base.pm,v 1.6 2002/02/21 09:06:14 parkerpine Exp $
 
 package Mail::MboxParser::Base;
 
@@ -13,7 +13,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = "0.02";
+$VERSION = "0.03";
 
 sub new(@) {
 	my ($class, @args) = @_;
@@ -51,11 +51,15 @@ Mail::MboxParser::Base - base clase for all other classes
 
 Nothing to describe nor to document here. Read L<Mail::MboxParser> on how to use the module.
 
+=head1 VERSION
+
+This is version 0.31.
+
 =head1 AUTHOR AND COPYRIGHT
 
-Tassilo von Parseval <Tassilo.Parseval@post.RWTH-Aachen.de>.
+Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001 Tassilo von Parseval.
+Copyright (c)  2001-2002 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

@@ -1,4 +1,14 @@
-# $Id: Changelog,v 1.33 2002/01/31 09:32:05 parkerpine Exp $
+# $Id: Changelog,v 1.35 2002/02/21 08:56:19 parkerpine Exp $
+
+v0.31 (Thu Feb 21 09:54:11 CET 2002)
+
+    + new option 'newline' for MboxParser-constructor,
+      defaults to 'AUTO' which can distinguish between
+      UNIXish and Win32-alike endings
+    + fixed a problem with saving non-text attachments under Win
+      (Aaron Johnson, Marco Trudel)
+    + added store_only switch to store_(all_)attachment(s) to only
+      save files matching a custom regex-pattern (Aaron Johnson)
 
 v0.30 (Thu Jan 31 10:28:42 CET 2002)
 
@@ -24,8 +34,7 @@ v0.30_3 (Sun Dec  9 10:41:26 CET 2001)
     -----------------------
     
     + bugifx in MboxParser.pm:
-      under Win each second mail was skipped
-      (Marco Trudel <mtrudel@viviance.com>)
+      under Win each second mail was skipped (Marco Trudel)
     + removed silly debug-print in Mail.pm
     + minor fixes of the PODs in Mail.pm
       (duplicate =back directive)
@@ -73,20 +82,18 @@ v0.30_1 (Mon Dec  3 12:04:00 CET 2001)
 
 v0.24 (Wed Nov 28 14:48:05 CET 2001)
     + mailboxes with DOSish line-endings (\015\012)
-      can now also be parsed
-      (reported by Bill Moseley <moseley@hank.org>)
+      can now also be parsed (Bill Moseley)
 
 v0.23 (Mon Nov 26 12:07:41 CET 2001)
     + bugfix in MboxParser.pm, last line of message sometimes 
-      ommited
-      (reported by Christian Wendt <christian.wendt@is-energy.de>)
+      ommited (Christian Wendt)
     + decoding of qp-encoded filenames for
       store_(all_)attachement(s)
 
 v0.22 (Tue Sep 20 13:23:38 CEST 2001)
     + new get_field method that returns a raw headerfield,
       so that even the "Received"-line is no longer lost
-      (Kenn Frankel <kfrankel@maxstr.com>)
+      (Kenn Frankel)
 
 v0.21 (Sun Sep 9 10:37:46 CEST 2001)
     + decoding is now pretty complete 

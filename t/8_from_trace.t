@@ -20,9 +20,8 @@ ok(scalar @mails, $mb->nmsgs);
 
 # 2 - 7
 print "Testing from- and received-lines...\n";
-chop (my $from_line = $mails[0]->from_line);
-ok($from_line, 
-    "From friedrich\@pythonpros.com  Thu Feb 26 17:23:40 1998");
+ok($mails[0]->from_line, 
+    'From friedrich@pythonpros.com  Thu Feb 26 17:23:40 1998');
 ok(scalar $mails[0]->trace, 2);
 
 ok($mails[1]->from_line,

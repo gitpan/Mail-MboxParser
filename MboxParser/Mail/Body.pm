@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Body.pm,v 1.11 2001/12/07 17:37:16 parkerpine Exp $
+# Version: $Id: Body.pm,v 1.14 2002/02/21 09:06:14 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Body;
 
@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.05";
+$VERSION 	= "0.06";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -271,11 +271,15 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =back
 
+=head1 VERSION
+
+This is version 0.31.
+
 =head1 AUTHOR AND COPYRIGHT
 
-Tassilo von Parseval <Tassilo.Parseval@post.RWTH-Aachen.de>.
+Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001 Tassilo von Parseval.
+Copyright (c)  2001-2002 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
