@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.23 2001/08/17 07:51:04 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.24 2001/08/18 09:07:10 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -18,7 +18,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.12";
+$VERSION	= "0.13";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -120,7 +120,7 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
 	my $mb = Mail::MboxParser->new('some_mailbox');
 
 	for my $msg ($mb->get_messages) {
-		print $msg->from->{name}, "\n";
+		print $msg->from->{name} || "none", "\n";
 		print $msg->from->{email}, "\n";
 		print $msg->header->{subject}, "\n";
 		print $msg->header->{'reply-to'}, "\n";
@@ -141,23 +141,23 @@ The below methods refer to Mail::MboxParser-objects.
 
 =over 4
 
-=item new
+=item B<new>
 
-=item new(MAILBOX)
+=item B<new(mailbox)>
 
 This creates a new MboxParser-object opening the specified MAILBOX with either absolute or relative path. It does not necessarily need a parameter in which case you need to pass the mailbox to the object using the method 'open'.
 Returns nothing.
 
-=item open(mailbox)
+=item B<open(mailbox)>
 
 Can be used to either pass a mailbox to the MboxParser-object either the first time or for changing the mailbox. 
 Returns nothing.
 
-=item get_messages
+=item B<get_messages>
 
 Returns an array containing all messages in the mailbox respresented as Mail::MboxParser::Mail objects.
 
-=item nmsgs
+=item B<nmsgs>
 
 Returns the number of messages in a mailbox. You could naturally also call get_messages in an array context, but this one wont create new objects. It just counts them and thus it is much quicker and wont eat a lot of memory.
 
@@ -167,25 +167,25 @@ The below methods refer to Mail::MboxParser::Mail-objects returned by get_messag
 
 =over 4
 
-=item new(header, body)
+=item B<new(header, body)>
 
 This is usually not called directly but instead by $mb->get_messages. You could however create a mail-object manually providing the header and body both as one string.
 
-=item header
+=item B<header>
 
 Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so $header{Subject} has to be written as $header{subject}.
 
-=item body
+=item B<body>
 
-Returns the body as a single string.
+Returns the body as a single string. Currently, the body will be 'as is'. That means, no decoding takes place.
 
-=item from
+=item B<from>
 
 Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty. The name-field does not necessarily contain a value either. Example:
 	
 	print $mail->from->{email};
 
-=item to
+=item B<to>
 
 Returns an array of hash-references of all to-fields in the mail-header. Fields are the same as those of $mail->from. Example:
 
@@ -194,25 +194,29 @@ Returns an array of hash-references of all to-fields in the mail-header. Fields 
 		print $recipient->{email};
 	}
 
-=item id
+=item B<cc>
+
+Identical with to() but returning the hash-refed "Cc: "-line.
+
+=item B<id>
 
 Returns the message-id of a message cutting off the leading and trailing '<' and '>' respectively.
 
-=item num_entitities
+=item B<num_entitities>
 
 Returns the number of MIME-entities. That is, the number of sub-entitities actually. If 0 is returned and you think this is wrong, check $mail->log.
 
-=item get_entitities([n])
+=item B<get_entitities([n])>
 
 Either returns an array of all MIME::Entity objects or one particular if called with a number. If no entity whatsoever could be found, an empty list is returned.
 
 $mail->log instantly called after get_entities will give you some information of what internally may have failed. If set, this will be an error raised by MIME::Entity but you don't need to worry about it at all. It's just for the record.
 
-=item get_entity_body(n)
+=item B<get_entity_body(n)>
 
 Returns the body of the n-th MIME::Entity as a single string, undef otherwise in which case you could check $mail->error.
 
-=item store_entity_body(n, FILEHANDLE)
+=item B<store_entity_body(n, FILEHANDLE)>
 
 Stores the stringified body of n-th entity to the specified filehandle. That's basically the same as:
 
@@ -225,7 +229,7 @@ and could be shortened to this:
 
 It returns a true value on success and undef on failure. In this case, examine the value of $mail->error since the entity you specified with 'n' might not exist.
 
-=item store_attachement(n, path, [coderef [,args]])
+=item B<store_attachement(n, path, [coderef [,args]])>
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
 
@@ -246,7 +250,7 @@ If 'path' does not exist, it will try to create the directory for you.
 
 Returns the filename under which the attachement has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
 
-=item store_all_attachements(path, [coderef [,args]])
+=item B<store_all_attachements(path, [coderef [,args]])>
 
 Walks through an entire mail and stores all apparent attachements to 'path'. See the supplied store_att.pl script in the eg-directory of the package to see a useful example.
 
@@ -256,7 +260,7 @@ Returns a list of files that has been succesfully saved and an empty list if no 
 
 $mail->error will tell you poassible failures and a possible explanation for that.
 
-=item is_spam
+=item B<is_spam>
 
 Sorry, no documentation on that yet before this is properly implemented. You can, however, try to find out yourself. ;-)
 
@@ -266,11 +270,11 @@ Shared methods for both mailbox- and mail-objects come below. These are about er
 
 =over 4
 
-=item error
+=item B<error>
 
 Call this immediately after one of the methods above that mention a possible error-message. Once called, the buffer for the error-message is cleared since only the _last_ error is stored.
 
-=item log
+=item B<log>
 
 Sort of internal weirdnesses are recorded here. Again only the last event is saved and erased after you called this method.
 
@@ -282,31 +286,31 @@ Mail::MboxParser basically is a hash-ref:
 
 =over 4
 
-=item $mb->{READER}
+=item B<$mb->{READER}>
 
 This is the filehandle from which is read internally. As to yet, it is read-only so you can't use it for writing. This may be changed later.
 
-=item $mb->{NMSGS}
+=item B<$mb->{NMSGS}>
 
 Having called nmsgs once this field contains the number of messages in the mailbox. Thus there is no need for calling the method twice which speeds up matters a little.
 
 Mail::MboxParser::Mail consists of the following fields:
 
-=item $mail->{RAW}
+=item B<$mail->{RAW}>
 
 This field no longer exists in order to save memory. Instead, do something like
 
- $entire_message = $mail->{HEADER}.$mail->{BODY};
+	$entire_message = $mail->{HEADER}.$mail->{BODY};
 
-=item $mail->{HEADER}
+=item B<$mail->{HEADER}>
 
 Well, just the header of the message as a string.
 
-=item $mail->{BODY}
+=item B<$mail->{BODY}>
 
 You guess it.
 
-=item $mail->{TOP_ENTITY}
+=item B<$mail->{TOP_ENTITY}>
 
 The top-level MIME::Entity of a message. You can call any suitable methods from the MIME::tools upon this object to give you more specific access to MIME-parts.
 
@@ -320,7 +324,7 @@ Mail::MboxParser provides a mechanism for you to figure out why some methods did
 
 =over 4
 
-=item (1) bad arguments 
+=item B<(1) bad arguments >
 
 In this case you called a method with arguments that did not make sense, hence you confused Mail::MboxParser. Example:
 
@@ -329,7 +333,7 @@ In this case you called a method with arguments that did not make sense, hence y
 
 In any of the above two cases, you'll get an error message and your script will exit. The message will, however, tell you in which line of your script this error occured.
 
-=item (2) correct arguments but...
+=item B<(2) correct arguments but...>
 
 Consider this line:
 
@@ -347,8 +351,8 @@ Just be brave: Write the above line and do the error-checking afterwards by call
 	}
 
 In the description of the available methods above, you always find a remark when you could use $mail->error. It always returns a string that you can print out and investigate any further.
-	
-=item (3) errors, that never get visible
+
+=item B<(3) errors, that never get visible>
 
 Well, they exist. When you handle MIME-stuff a lot such as attachements etc., Mail::MboxParser internally calls a lot of methods provided by the MIME::Tools package. These work splendidly in most cases, but the MIME::Tools may fail to produce something sensible if you have a very queer or even screwed up mailbox.
 
@@ -356,7 +360,7 @@ If this happens you might find information on that when calling $mail->log. This
 
 My advice: Ignore them! If there really is something in $mail->log it is either because you're mails are totally weird (there is nothing you can do about that then) or these errors are smoothly catched inside Mail::MboxParser in which case all should be fine for you.
 
-=item (4) the apocalyps
+=item B<(4) the apocalyps>
 
 If nothing seems to work the way it should and $mail->error is empty, then the worst case has set in: Mail::MboxParser has a bug.
 
@@ -380,8 +384,6 @@ This all does not happen if you just parse a mailbox to extract one header-field
 
 Below you see two tables produced by the Benchmark module. I compared my module (0.06) with Mail::Box, Mail::Folder and Mail::Folder::FastReader (grepmail), while the second table shows the same with 0.07 of Mail::MboxParser. I only let the modules iterate over the mailbox and count the number of messages by extracting them. There is no single header-field extracted. So keep that in mind. Mail::MboxParser is slower than 330/s when you call $mail->header.
 
-=end
-
                    Rate Mail::Folder Mail::Box Mail::MboxParser grepmail
 Mail::Folder     23.2/s           --      -76%             -89%     -99%
 Mail::Box        97.1/s         318%        --             -53%     -95%
@@ -400,17 +402,17 @@ Mail::Box by Mark Overmeer is closer to Mail::MboxParser with mailboxes that con
 
 =head1 BUGS
 
-Due to the different ways that mailers format to-lines with multiple recipients, $mail->to will not always cleanly split by each recipient so that on same occasions to() just returns a list with one element that contains the whole string behind "To: ". As for yet, you have to process this long string by yourself.
+Some mailers have a fancy idea of how a "To: "- or "Cc: "-line should look. I have seen things like:
+
+	To: "\"John Doe"\" <john.doe@foo.com>
+
+The splitting into name and email, however, does still work here, but you have to remove these silly double-quotes and backslashes yourself.
 
 The way of counting the messages and detecting them now complies to RFC 822. This is, however, no guarentee that it all works seamlessly. There are just so many mailboxes that get screwed up by mal-formated mails.
 
-=head1 SEE ALSO
-
-L<MIME::Entity>
-
 =head1 THANKS
 
-Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Kenn Frankel and Mark Overmeer.
+Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Kenn Frankel and Mark Overmeer for his hints on more object-orientedness.
 
 =head1 AUTHOR AND COPYRIGHT
 
@@ -419,5 +421,11 @@ Tassilo von Parseval <Tassilo.Parseval@post.RWTH-Aachen.de>.
 Copyright (c)  2001 Tassilo von Parseval. 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<MIME::Entity>
+
+L<Mail::MboxParser::Mail> to learn how to use MIME::Entity-stuff easily
 
 =cut

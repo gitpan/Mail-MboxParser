@@ -1,4 +1,10 @@
-# $Id: Changelog,v 1.13 2001/08/17 07:52:19 parkerpine Exp $
+# $Id: Changelog,v 1.14 2001/08/18 09:06:46 parkerpine Exp $
+
+v0.13 (Sat Aug 18 11:04:54 CEST 2001):
+	+ new to()-equivalent cc()
+	+ id() now also resets $mail->error as it should do
+	+ extended documentation for Mail::MboxParser::Mail
+	+ made Mail::MboxParser-docs more eye-friendly
 
 v0.12 (Fri Aug 17 08:35:15 CEST 2001):
 	+ new base-class Mail::MboxParser::Base

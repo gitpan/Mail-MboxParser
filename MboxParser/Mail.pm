@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.21 2001/08/17 07:51:53 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.22 2001/08/18 09:08:02 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -17,7 +17,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION    = "0.12";
+$VERSION    = "0.13";
 @EXPORT     = qw();
 @ISA		= qw(Mail::MboxParser::Base MIME::Entity);
 $^W++;
@@ -63,27 +63,16 @@ sub from() {
 	return {(name => $name, email => $email)};
 }
 
-sub to() {
+sub to() { shift->_recipients("to") }
+
+sub cc() { shift->_recipients("cc") }
+
+sub id() { 
 	my $self = shift;
 	$self->reset_last;
-	
-	my $to = $self->header->{to};
-	my @tos = split /,/, $to;
-	map { s/^\s+//; s/\s+$// } @tos; # remove leading or trailing whitespaces
-	my @to_line;
-	for my $pair (@tos) {
-		my ($name, $email) = split /\s</, $pair;
-		$email =~ s/\>$//g unless not $email;
-		if ($name and not $email) {
-			$email = $name;
-			$name  = "";
-		}
-		push @to_line, {(name => $name, email => $email)};
-	}
-	return @to_line;
-}
-
-sub id() { shift->header->{'message-id'} =~ /\<(.*)\>/; $1 } 
+	$self->header->{'message-id'} =~ /\<(.*)\>/; 
+	$1; 
+} 
 
 # --------------------
 # MIME-related methods
@@ -117,6 +106,13 @@ sub get_entities(;$) {
 	}
 	if (@parts == 1) 	{ return $parts[0] }
 	else 				{ return @parts }
+}
+
+# just overriding MIME::Entity::parts() 
+# to work around its strange behaviour
+sub parts(;$) {
+	my ($self, $arg) = @_;
+	$self->get_entities($arg);
 }
 
 sub get_entity_body($) {
@@ -234,6 +230,32 @@ sub is_spam(;@) {
 	return $detector->classify;
 }
 
+
+sub _recipients($) {
+	my ($self, $field) = @_;
+	$self->reset_last;
+	
+	my $rec = $self->header->{$field};
+	if (not $rec) {
+		$self->{LAST_ERR} = "'$field' not in header";
+		return;
+	}
+	
+	my @recs = split /,/, $rec;
+	map { s/^\s+//; s/\s+$// } @recs; # remove leading or trailing whitespaces
+	my @rec_line;
+	for my $pair (@recs) {
+		my ($name, $email) = split /\s</, $pair;
+		$email =~ s/\>$//g unless not $email;
+		if ($name and not $email) {
+			$email = $name;
+			$name  = "";
+		}
+		push @rec_line, {(name => $name, email => $email)};
+	}
+	return @rec_line;
+}
+
 # patch provided by Kenn Frankel
 sub split_header {
 	my $header = shift;
@@ -277,11 +299,21 @@ See L<Mail::MboxParser> for examples on usage.
 
 Mail::MboxParser::Mail objects are usually not created directly though, in theory, they could be. A description of the provided methods can be found in L<Mail::MboxParser>.
 
-Documentation will be added as soon as it becomes useful which probably happens when Mail::MboxParser can also write to mailboxes.
+However, go on reading if you want to use methods from MIME::Entity.
 
-=head1 SEE ALSO
+=head1 EXTERNAL METHODS
 
-L<Mail::MboxParser>
+Since one of Mail::MboxParser::Mail's baseclasses is MIME::Entity, you can invoke most of its methods on Mail::MboxParser::Mail-objects. Example:
+
+	my $mb = Mail::MboxParser->new("/home/user/Mail/received");
+	for my $msg ($mb->get_messages) {
+		print $msg->effective_type, "\n";
+	}
+
+effective_type() is not implemented by Mail::MboxParser::Mail and thus the corresponding method of MIME::Entity is automatically called.
+
+To learn about what methods might be useful for you, you should read the "Access"-part of the section "PUBLIC INTERFACE" in the MIME::Entity manpage.
+It may become handy if you have mails with a lot of MIME-parts and you not just want to handle binary-attachements but any kind of MIME-data.
 
 =head1 AUTHOR AND COPYRIGHT
 
@@ -290,5 +322,9 @@ Tassilo von Parseval <Tassilo.Parseval@post.RWTH-Aachen.de>.
 Copyright (c)  2001 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<Mail::MboxParser> for a description of methods
 
 =cut
