@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.16 2001/07/29 10:33:03 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.17 2001/08/01 07:57:49 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.07";
+$VERSION	= "0.08";
 @EXPORT		= qw();
 $^W++;
 
@@ -228,7 +228,7 @@ Walks through an entire mail and stores all apparent attachements to 'path'. See
 
 =head1 FIELDS
 
-Mail::MboxParser is basically a pseudo-hash containing two fields.
+Mail::MboxParser basically is a hash-ref:
 
 =over 4
 
@@ -240,11 +240,12 @@ This is the filehandle from which is read internally. As to yet, it is read-only
 
 Having called nmsgs once this field contains the number of messages in the mailbox. Thus there is no need for calling the method twice which speeds up matters a little.
 
-Mail::MboxParser::Mail is a pseudo-hash with four fields.
+Mail::MboxParser::Mail consists of the following fields:
 
 =item $mail->{RAW}
 
-Contains the whole message (that is, header plus body) in one string.
+This field no longer exists in order to save memory. Instead, do something like
+ $entire_message = $mail->{HEADER}.$mail->{BODY};
 
 =item $mail->{HEADER}
 
@@ -254,9 +255,11 @@ Well, just the header of the message as a string.
 
 You guess it.
 
-=item $mail->{ENTITY}
+=item $mail->{TOP_ENTITY}
 
 The top-level MIME::Entity of a message. You can call any suitable methods from the MIME::tools upon this object to give you more specific access to MIME-parts.
+
+This field is undefined until one of the MIME-methods (num_entities, get_entities etc.) is called for the sake of efficiency.
 
 =back
 

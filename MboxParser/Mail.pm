@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.15 2001/07/29 10:22:26 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.16 2001/08/01 08:01:11 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -15,7 +15,7 @@ use MIME::Parser;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.07";
+$VERSION    = "0.08";
 @EXPORT     = qw();
 $^W++;
 
@@ -28,18 +28,13 @@ sub new {
 	$self->{HEADER} 		= $header;
 	$self->{HEADER_HASH}	= \&split_header;
 	$self->{BODY}			= $body;
-	$self->{MIME_PARSED}    = 0;
 	$self->{TOP_ENTITY}		= 0;
 	$self->{ENTITY}			= 
 		sub { 
-			if (not $self->{MIME_PARSED}) {
-				my $p = new MIME::Parser;
-				$p->output_to_core(1);
-				$self->{MIME_PARSED} = 1;
-				$self->{TOP_ENTITY} =
-					$p->parse_data($self->{HEADER}.$self->{BODY});
-			}
-			else { 	$self->{TOP_ENTITY} }
+			my $p = new MIME::Parser;
+			$p->output_to_core(1);
+			$self->{TOP_ENTITY} =
+				$p->parse_data($self->{HEADER}.$self->{BODY});
 		};
 
 	bless ($self, $class);
@@ -80,13 +75,24 @@ sub id {
 
 sub num_entities {
 	my $self = shift;
-	return (my $n = $self->{ENTITY}->()->parts);
+	# closure $self->{ENTITY} only defined
+	# if not yet called
+	if ($self->{ENTITY}) {	
+		$self->{ENTITY}->();
+		undef $self->{ENTITY};
+	}	
+	return scalar $self->{TOP_ENTITY}->parts;
+		
 }
 
 sub get_entities {
 	my $self = shift;
 	my $num  = shift;
-	return $self->{ENTITY}->()->parts($num);
+	if ($self->{ENTITY}) {
+		$self->{ENTITY}->();
+		undef $self->{ENTITY};
+	}					
+	return $self->{TOP_ENTITY}->parts($num);
 }
 
 sub get_entity_body {
