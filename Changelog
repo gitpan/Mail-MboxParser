@@ -1,4 +1,15 @@
-# $Id: Changelog,v 1.30 2001/12/09 09:47:39 parkerpine Exp $
+# $Id: Changelog,v 1.32 2001/12/13 13:25:01 parkerpine Exp $
+
+v0.30_4 (Thu Dec 13 14:27:35 CET 2001)
+
+    -----------------------
+    THIS IS A BETA RELEASE!
+    -----------------------
+
+    + There had been problems with mboxes under Win having
+      UNIXish line-ending, should be fixed now (should!)
+    + a speed-gain of 6% on overage when parsing a mailbox and 
+      accessing header-elements
 
 v0.30_3 (Sun Dec  9 10:41:26 CET 2001)
 

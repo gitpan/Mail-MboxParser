@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.44 2001/12/09 09:47:12 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.46 2001/12/13 13:26:26 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -66,15 +66,13 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $OS);
-$VERSION	= "0.30_3";
+$VERSION	= "0.30_4";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
-# need this for tell() since Win obviously reports one byte too less
 
-$OS = $^O =~ /Win/ 
-        ? 1
-        : 0;
+my $from_date   = qr/^From (.*)\d{4}\015?$/;
+my $empty_line  = qr/^\015?$/;
 
 # ----------------------------------------------------------------
 
@@ -131,6 +129,7 @@ See 'perldoc Mail::MboxParser' on how to call it.
 EOC
 	}
 	$self->open(@args); 
+    binmode $self->{READER} if $^O =~ /Win/;
 	$self;
 }
 
@@ -205,8 +204,6 @@ sub get_messages() {
 	my $h = $self->{READER};
 
 	my $got_header;
-	my $from_date  = qr/^From (.*)\d{4}\015?$/;
-	my $empty_line = qr/^\015?$/;
 
 	my @messages;
 
@@ -228,9 +225,9 @@ sub get_messages() {
 		# out of data, store message in Mail-object
         if ((/$from_date/ || eof) && $got_header) {
             push @body, $_ if eof; # don't forget last line!!
-			$header = join '', @header;
+            #$header = join '', @header;
 			$body 	= join '', @body;
-			my $m = Mail::MboxParser::Mail->new($header, 
+			my $m = Mail::MboxParser::Mail->new([ @header ], 
 												$body, 
 												$self->{CONFIG});
 			push @messages, $m;
@@ -300,15 +297,12 @@ sub next_message() {
     my $self = shift;
     $self->reset_last;
     my $h    = $self->{READER};
-    #seek $h, 0, 0;
 
 	my ($in_header, $in_body) = (0, 0);
 	my ($header, $body);
 	my (@header, @body);
 
 	my $got_header = 0;
-	my $from_date  = qr/^From (.*)\d{4}\015?$/;
-	my $empty_line = qr/^\015?$/;
     
     seek $h, $self->{CURR_POS}, 0;
     
@@ -319,8 +313,8 @@ sub next_message() {
                 ($in_header, $in_body) = (1, 0);
             }
             else {
-                $self->{CURR_POS} = (tell($h) - length) - $OS ;
-                return Mail::MboxParser::Mail->new(join ('', @header),
+                $self->{CURR_POS} = tell($h) - length;
+                return Mail::MboxParser::Mail->new([@header],
                                                    join ('', @body),
                                                    $self->{CONFIG});
             }
@@ -424,13 +418,12 @@ sub make_index() {
     my $self = shift;
     $self->reset_last;
     my $h    = $self->{READER};
-    my $from_date  = qr/^From (.*)\d{4}\015?$/;
     
     seek $h, 0, 0;
     
     my $c = 0;
     while (<$h>) {
-        $self->{MSG_IDX}->{$c} = (tell ($h) - length) - $OS, $c++ 
+        $self->{MSG_IDX}->{$c} = tell($h) - length, $c++ 
             if /$from_date/;
     }
     seek $h, 0, 0;
@@ -478,7 +471,6 @@ sub nmsgs() {
 	if (not $self->{READER}) { return "No mbox opened" }
 	if (not $self->{NMSGS}) {
 		my $h = $self->{READER};
-		my $from_date = qr/^From (.*)\d{4}\015?$/;
         seek $h, 0, 0;
 		while (<$h>) {
 			$self->{NMSGS}++ if /$from_date/;

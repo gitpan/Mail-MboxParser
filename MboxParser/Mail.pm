@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.42 2001/12/09 10:31:09 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.44 2001/12/13 13:47:37 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -39,7 +39,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD);
-$VERSION    = "0.25";
+$VERSION    = "0.26";
 @EXPORT     = qw();
 
 my $Parser = new MIME::Parser; $Parser->output_to_core(1);
@@ -52,7 +52,7 @@ use overload '""' => \&as_string, fallback => 1;
 
 =item B<new(header, body)>
 
-This is usually not called directly but instead by get_messages(). You could however create a mail-object manually providing the header and body both as one string.
+This is usually not called directly but instead by get_messages(). You could however create a mail-object manually providing the header and body each as either one string or as an array-ref representing the lines.
 
 =back
 
@@ -64,7 +64,9 @@ sub init (@) {
 	
 	$self->{HEADER}			= $header;
 	$self->{HEADER_HASH}	= \&split_header;
-	$self->{BODY}			= $body;
+	$self->{BODY}			= ref $body 
+                                ? @{$body}
+                                : $body;
 	$self->{TOP_ENTITY}		= 0;
 	$self->{ARGS}			= $conf;
 	$self;
@@ -353,8 +355,11 @@ sub get_entities(@) {
 	}
 	
 	if (ref $self->{TOP_ENTITY} ne 'MIME::Entity') {
-		$self->{TOP_ENTITY} = 
-			$Parser->parse_data($self->{HEADER}.$self->{BODY});
+        my $data = join "", ref $self->{HEADER}
+                                ? @{$self->{HEADER}}
+                                : $self->{HEADER}, 
+                                $self->{BODY};
+		$self->{TOP_ENTITY} = $Parser->parse_data($data);
 	}
 	
 	my @parts = eval { $self->{TOP_ENTITY}->parts_DFS; };
@@ -738,11 +743,14 @@ sub _recipients($) {
 # patch provided by Kenn Frankel
 sub split_header {
 	my ($header, $decode) = @_;
-	my @headerlines = split /\015?\012/, $header;
+	my @headerlines = ref $header 
+                        ? @{$header}
+                        : split /\015?\012/, $header;
 	my @header;
+    chomp @headerlines if ref $header;
  	foreach my $bit (@headerlines) {
-		if ($bit =~ /^\s/) 	{ $bit =~ s/^\s+//; $header[-1] .= $bit; }
-		else 				{ push @header, $bit; }
+		if ($bit =~ s/^\s//) { $header[-1] .= $bit; }
+		else 				 { push @header, $bit; }
 	}
 											   
 	my ($key, $value);
@@ -780,14 +788,20 @@ sub AUTOLOAD {
             if ($class->can($call)) {
                 if ($class eq 'MIME::Entity') {
                     $self->{TOP_ENTITY} = 
-                        $Parser->parse_data($self->{HEADER}.$self->{BODY})
+                        $Parser->parse_data(join "", ref $self->{HEADER}
+                                                        ? @{$self->{HEADER}}
+                                                        : $self->{HEADER},
+                                                    $self->{BODY})
                             if ref $self->{TOP_ENTITY} ne 'MIME::Entity';
                     return $self->{TOP_ENTITY}->$call(@args);
                 }
 
                 if ($class eq 'Mail::Internet') {
                     return Mail::Internet->new(
-                        [ split /\n/, $self->{HEADER}.$self->{BODY} ] 
+                        [ split /\n/, join "", ref $self->{HEADER}
+                                                ? @{$self->{HEADER}}
+                                                : $self->{HEADER}
+                                            .$self->{BODY} ] 
                         );
                 }
             }
