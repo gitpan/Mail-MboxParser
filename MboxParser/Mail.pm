@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.10 2001/07/19 13:18:01 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.11 2001/07/23 16:11:52 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -86,7 +86,8 @@ sub get_entity_body {
 	my $self = shift;
 	my $num  = shift;
 
-	unless ($num >= $self->num_entities) {
+	if (not $num >= $self->num_entities and 
+		$self->get_entities($num)->bodyhandle) {
 		return $self->get_entities($num)->bodyhandle->as_string;
 	}
 	else { return undef }
@@ -131,10 +132,8 @@ sub _split_header {
 	my %header;
 	for (@header) {
 		unless (/^Received:\s/ or not /: /) {
-			($key, $value, @r) = split /:\s/;
-			if ($key =~ /^Subject/ and $value eq 'Re') {
-				$value = join " ", $value.":", @r;
-			}
+			$key   = substr $_, 0, index($_, ": ");
+			$value = substr $_, index($_, ": ") + 2;
 			$header{lc($key)} = $value;
 		}
 	}

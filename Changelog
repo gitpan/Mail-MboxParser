@@ -1,4 +1,8 @@
-# $Id: Changelog,v 1.4 2001/07/19 13:12:25 parkerpine Exp $
+# $Id: Changelog,v 1.5 2001/07/23 16:12:16 parkerpine Exp $
+
+v0.04 (Mon Jul 23 17:52:29 CEST 2001):
+	+ fixed wrong parsing of header lines if line contains a colon
+	+ increased reliability of get_entity_body
 
 v0.03 (Thu Jul 19 15:09:18 CEST 2001):
 	+ $mail->{HEADER} returning a string broke everything, fixed
