@@ -1,4 +1,11 @@
-# $Id: Changelog,v 1.5 2001/07/23 16:12:16 parkerpine Exp $
+# $Id: Changelog,v 1.6 2001/07/27 18:31:37 parkerpine Exp $
+
+v0.05 (Fri Jul 27 20:28:04 CEST 2001):
+	+ rework of the pattern-matching,
+	  should now be minimally quicker
+	+ nmsgs now compliant to RFC 822
+	+ added little script isspam (undocumented)
+	+ this time the correct $VERSION !!
 
 v0.04 (Mon Jul 23 17:52:29 CEST 2001):
 	+ fixed wrong parsing of header lines if line contains a colon

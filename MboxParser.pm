@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.11 2001/07/19 13:18:01 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.13 2001/07/27 18:32:46 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.03";
+$VERSION	= "0.05";
 @EXPORT		= qw();
 $^W++;
 
@@ -57,21 +57,23 @@ sub get_messages {
 	my $h = $self->{READER};
 	
 	my $got_header;
+	my $from_date  = qr(^From (.*)\d{4}\n$);
+	my $empty_line = qr(^\n$);
 	while (<$h>) {
 		# entering header
-		if (/^From (.*)\d{4}\n$/ and not $in_body) {
+		if (not $in_body and /$from_date/) {
 			($in_header, $in_body) = (1, 0);
 			$got_header = 0;
 		}
 		# entering body
-		if ($in_header and /^\n$/) { 
+		if ($in_header and /$empty_line/) { 
 			($in_header, $in_body) = (0, 1);
 			$got_header = 1; 
 		}
 		
 		# just before entering next mail-header or running
 		# out of data, store message in Mail-object
-		if ((/^From (.*)\d{4}\n$/ or eof) and $got_header) {
+		if ((/$from_date/ or eof) and $got_header) {
 			$header = join '', @header;
 			$body 	= join '', @body;
 			my $m = Mail::MboxParser::Mail->new($header, $body);
@@ -97,8 +99,9 @@ sub nmsgs {
 	if (not $self->{READER}) { return "No mbox opened" }
 	if (not $self->{NMSGS}) {
 		$h = $self->{READER};
+		my $from_date = qr(^From (.*)\d{4}\n$);
 		while (<$h>) {
-			$self->{NMSGS}++ if /^Lines: \d+\n$/;
+			$self->{NMSGS}++ if /$from_date/;
 		}
 	}
 	return $self->{NMSGS} || "0";	
@@ -125,11 +128,10 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
 	my $mb = Mail::MboxParser->new('some_mailbox');
 
 	for my $msg ($mb->get_messages) {
-		my %header = %{$msg->header};
 		print $msg->from->{name}, "\n";
 		print $msg->from->{email}, "\n";
-		print $header{subject}, "\n";
-		print $header{'reply-to'}, "\n";
+		print $msg->header->{subject}, "\n";
+		print $msg->header->{'reply-to'}, "\n";
 		$msg->store_all_attachements('/tmp');
 	}
 
@@ -137,9 +139,11 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
 
 This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
 
-=head2 METHODS
+=head1 METHODS
 
 The below methods refer to Mail::MboxParser-objects.
+
+=over 4
 
 =item new
 
@@ -161,7 +165,11 @@ Returns an array containing all messages in the mailbox respresented as Mail::Mb
 
 Returns the number of messages in a mailbox. You could naturally also call get_messages in an array context, but this one wont create new objects. It just counts them and thus it is much quicker and wont eat a lot of memory.
 
+=back
+
 The below methods refer to Mail::MboxParser::Mail-objects returned by get_messages.
+
+=over 4
 
 =item new(header, body)
 
@@ -199,12 +207,12 @@ Returns the body of the n-th MIME::Entity as a single string.
 
 Stores the stringified body of n-th entity to the specified filehandle. That's basically the same as:
 
-	my $body = $mail->get_entity_body(0);
-	print FILEHANDLE $body;
+ my $body = $mail->get_entity_body(0);
+ print FILEHANDLE $body;
 
 and could be shortened to this:
 
-	$mail->store_entity_body(0, \*FILEHANDLE);
+ $mail->store_entity_body(0, \*FILEHANDLE);
 
 =item store_attachement(n, path)
 
@@ -215,9 +223,13 @@ It uses the recommended-filename found in the MIME-header. 'path' is the place w
 
 Walks through an entire mail and stores all apparent attachements to 'path'. See the supplied store_att.pl script in the eg-directory of the package to see a useful example.
 
-=head2 FIELDS
+=back
+
+=head1 FIELDS
 
 Mail::MboxParser is basically a pseudo-hash containing two fields.
+
+=over 4
 
 =item $mb->{READER}
 
@@ -245,11 +257,13 @@ You guess it.
 
 The top-level MIME::Entity of a message. You can call any suitable methods from the MIME::tools upon this object to give you more specific access to MIME-parts.
 
+=back
+
 =head1 BUGS
 
-Don't know yet of any. However, since I only have a limited number of mailboxes on which I could test the module, there might be circumstances under which Mail::MboxParser fails to work correctly. It will probably fail on mal-formated mails produced by some cheap CGI-webmailers. 
+Don't know yet of any. However, since I only have a limited number of mailboxes on which I could test the module, there might be circumstances under which Mail::MboxParser fails to work correctly. It might fail on mal-formated mails produced by some cheap CGI-webmailers. 
 
-The way of counting the number of mails in a mailbox is a little suspect. Internally this looks like '$self->{NMSGS}++ if /^Lines: \d+\n$/;'. In case nmsgs really produces bogus then you could try calling get_messages in scalar context: '$mb->{NMSGS} = $mb->get_messages'. Once having done so, a call to nmsgs will produce this number since it only parses once and will only return the previously cached results on later calls.
+The way of counting the messages and detecting them now complies to RFC 822. This is, however, no guarentee that it all works seamlessly. There are just so many mailboxes that get screwed up by mal-formated mails.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -1,4 +1,5 @@
 #! /usr/bin/perl
+# $Id$
 
 use strict;
 use Mail::MboxParser;

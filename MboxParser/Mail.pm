@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.11 2001/07/23 16:11:52 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.13 2001/07/27 18:33:18 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -15,7 +15,7 @@ use MIME::Parser;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.03";
+$VERSION    = "0.05";
 @EXPORT     = qw();
 $^W++;
 
