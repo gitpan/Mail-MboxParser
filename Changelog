@@ -1,4 +1,8 @@
-# $Id: Changelog,v 1.9 2001/08/01 08:00:17 parkerpine Exp $
+# $Id: Changelog,v 1.10 2001/08/04 12:08:38 parkerpine Exp $
+
+v0.09 (Sat Aug  4 13:58:47 CEST 2001)
+	+ multi-line header-fields are now correctly reckognized
+	  (Kenn Frankel <kfrankel@maxstr.com>)
 
 v0.08 (Wed Aug  1 09:58:18 CEST 2001)
 	+ $self->{ENTITY} now destroys itself once called,

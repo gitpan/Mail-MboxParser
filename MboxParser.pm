@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.17 2001/08/01 07:57:49 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.18 2001/08/04 12:09:14 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.08";
+$VERSION	= "0.09";
 @EXPORT		= qw();
 $^W++;
 
@@ -245,6 +245,7 @@ Mail::MboxParser::Mail consists of the following fields:
 =item $mail->{RAW}
 
 This field no longer exists in order to save memory. Instead, do something like
+
  $entire_message = $mail->{HEADER}.$mail->{BODY};
 
 =item $mail->{HEADER}
@@ -302,6 +303,10 @@ Mail::Box by Mark Overmeer is closer to Mail::MboxParser with mailboxes that con
 Don't know yet of any. However, since I only have a limited number of mailboxes on which I could test the module, there might be circumstances under which Mail::MboxParser fails to work correctly. It might fail on mal-formated mails produced by some cheap CGI-webmailers. 
 
 The way of counting the messages and detecting them now complies to RFC 822. This is, however, no guarentee that it all works seamlessly. There are just so many mailboxes that get screwed up by mal-formated mails.
+
+=head1 THANKS
+
+Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Kenn Frankel and Mark Overmeer.
 
 =head1 AUTHOR AND COPYRIGHT
 

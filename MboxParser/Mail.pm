@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.16 2001/08/01 08:01:11 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.17 2001/08/04 12:09:58 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -15,7 +15,7 @@ use MIME::Parser;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.08";
+$VERSION    = "0.09";
 @EXPORT     = qw();
 $^W++;
 
@@ -28,7 +28,6 @@ sub new {
 	$self->{HEADER} 		= $header;
 	$self->{HEADER_HASH}	= \&split_header;
 	$self->{BODY}			= $body;
-	$self->{TOP_ENTITY}		= 0;
 	$self->{ENTITY}			= 
 		sub { 
 			my $p = new MIME::Parser;
@@ -79,7 +78,7 @@ sub num_entities {
 	# if not yet called
 	if ($self->{ENTITY}) {	
 		$self->{ENTITY}->();
-		undef $self->{ENTITY};
+		delete $self->{ENTITY};
 	}	
 	return scalar $self->{TOP_ENTITY}->parts;
 		
@@ -90,7 +89,7 @@ sub get_entities {
 	my $num  = shift;
 	if ($self->{ENTITY}) {
 		$self->{ENTITY}->();
-		undef $self->{ENTITY};
+		delete $self->{ENTITY};
 	}					
 	return $self->{TOP_ENTITY}->parts($num);
 }
@@ -138,9 +137,16 @@ sub store_all_attachements {
 	}
 }
 
+# patch provided by Kenn Frankel
 sub split_header {
 	my $header = shift;
-	my @header = split /\n/, $$header;
+	my @headerlines = split /\n/, $$header;
+	my @header;
+ 	foreach my $bit (@headerlines) {
+		if ($bit =~ /^\s/) 	{ $header[-1] .= $bit; }
+		else 				{ push @header, $bit; }
+	}
+											   
 	my ($key, $value);
 	my %header;
 	for (@header) {
