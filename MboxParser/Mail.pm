@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.35";
+$VERSION    = "0.36";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -337,6 +337,8 @@ Returns a hash-ref with the two fields 'name' and 'email'. Returns C<undef> if e
 	
 	print $mail->from->{email};
 
+On behalf of suggestions I received from users, from() tries to be smart when 'name'is empty and 'email' has the form 'first.name@host.com'. In this case, 'name' is set to "First Name".
+
 =back
 
 =cut
@@ -351,6 +353,7 @@ sub from() {
 	if ($name && ! $email) {
 		$email = $name;
 		$name  = "";
+        $name  = ucfirst($1) . " " . ucfirst($2) if $email =~ /^(.*?)\.(.*)@/;
 	}
 	return {(name => $name, email => $email)};
 }
@@ -368,6 +371,8 @@ Returns an array of hash-references of all to-fields in the mail-header. Fields 
 		print $recipient->{email};
 	}
 
+The same 'name'-smartness applies here as described under C<from()>.
+
 =back
 
 =cut
@@ -381,6 +386,8 @@ sub to() { shift->_recipients("to") }
 =item B<cc>
 
 Identical with to() but returning the hash-refed "Cc: "-line.
+
+The same 'name'-smartness applies here as described under C<from()>.
 
 =back
 
@@ -676,7 +683,8 @@ EOW
     
         return if defined $args{store_only} and 
                   $file !~ /$args{store_only}/;
-        
+
+        local *ATT; 
 		if (open ATT, ">$path/$file") {
 			$self->store_entity_body($num, handle => \*ATT);
 			close ATT ;
@@ -846,7 +854,8 @@ sub _recipients($) {
 		return;
 	}
 	
-	my @recs = split /,/, $rec;
+    $rec =~ s/(?<=\@)(.*?),/$1\n/g;
+	my @recs = split /\n/, $rec;
 	map { s/^\s+//; s/\s+$// } @recs; # remove leading or trailing whitespaces
 	my @rec_line;
 	for my $pair (@recs) {
@@ -855,6 +864,8 @@ sub _recipients($) {
 		if ($name && ! $email) {
 			$email = $name;
 			$name  = "";
+            $name  = ucfirst($1) . " " . ucfirst($2) 
+                        if $email =~ /^(.*?)\.(.*)@/;
 		}
 		push @rec_line, {(name => $name, email => $email)};
 	}
@@ -991,7 +1002,7 @@ Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fa
 
 =head1 VERSION
 
-This is version 0.37.
+This is version 0.38.
 
 =head1 AUTHOR AND COPYRIGHT
 

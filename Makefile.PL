@@ -4,10 +4,10 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     AUTHOR       => 'Tassilo v. Parseval <tassilo.parseval@post.rwth-aachen.de',
-    NAME         => 'Mail::MBoxParser',
+    NAME         => 'Mail::MboxParser',
     PMLIBDIRS    => ['MboxParser'],
     VERSION_FROM => 'MboxParser.pm', # finds $VERSION
     PREREQ_PM    => { MIME::Tools       => 5.0,
                       MIME::QuotedPrint => 0, },
-    DISTNAME     => 'Mail-MboxParser'
+    DISTNAME     => 'Mail-MboxParser',
 );

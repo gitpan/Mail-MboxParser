@@ -1,5 +1,20 @@
 # $Id: Changelog,v 1.37 2002/03/01 10:10:27 parkerpine Exp $
 
+v0.38 (Wed Jan 15 14:34:49 CET 2003)
+
+    + fixed wrong splittal: in to(), cc(), from()
+      '"name, first" <email@host.com>' would be split even though
+      the comma is within double quotes
+      (patched by Robert McArthur <mcarthur@dstc.edu.au>)
+    + in same methods:
+      'name' is set to "First Name" if it was previously empty and
+      the email address looks like "first.name@email.com"
+      (suggested and patched by Robert McArthur)
+    + fixed a mysterious "Uninitialized value in list assignment" 
+      warning in Body.pm
+    + localized a filehandle inside Mail.pm
+    + fixed typo in Makefile.PL
+
 v0.37 (Tue Nov 26 10:10:18 CET 2002)
 
     + fixed some inconsistencies when constructing a 

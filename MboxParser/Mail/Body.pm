@@ -16,11 +16,11 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.10";
+$VERSION 	= "0.11";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
-use overload '""' => \&as_string, fallback => 1;
+use overload '""' => sub { shift->as_string }, fallback => 1;
 
 BEGIN { 
 	eval { require URI::Find; };
@@ -287,7 +287,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.37.
+This is version 0.38.
 
 =head1 AUTHOR AND COPYRIGHT
 
