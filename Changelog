@@ -1,4 +1,9 @@
-# $Id: Changelog,v 1.2 2001/07/05 06:21:53 parkerpine Exp $
+# $Id: Changelog,v 1.3 2001/07/06 06:05:58 parkerpine Exp $
+
+v0.02 (Fri Jul  6 08:04:34 CEST 2001):
+	+ $mail->{HEADER} now returns a string
+	+ eg-directory included in the package
+	+ now works on Perl >= 5.004
 
 v0.01 (Thu Jul  5 08:19:40 CEST 2001):
 	+ upload to CPAN

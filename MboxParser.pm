@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.7 2001/07/04 07:02:46 uid48251 Exp $
+# Version: $Id: MboxParser.pm,v 1.10 2001/07/06 06:13:07 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -13,11 +13,11 @@ require 5.004;
 use Mail::MboxParser::Mail;
 
 use strict;
-use warnings;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.01";
+$VERSION	= "0.02";
 @EXPORT		= qw();
+$^W++;
 
 sub new {
 	my $call = shift;
@@ -205,7 +205,7 @@ and could be shortened to this:
 =item store_attachement(n, path)
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
-It uses the recommend-filename found in the MIME-header. 'path' is the place where the new file will go to.
+It uses the recommended-filename found in the MIME-header. 'path' is the place where the new file will go to.
 
 =item store_all_attachements(path)
 
@@ -231,7 +231,7 @@ Contains the whole message (that is, header plus body) in one string.
 
 =item $mail->{HEADER}
 
-Well, just the header of the message.
+Well, just the header of the message as a string.
 
 =item $mail->{BODY}
 
@@ -255,4 +255,3 @@ Copyright (c)  2001 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
-}

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.5 2001/07/04 07:03:10 uid48251 Exp $
+# Version: $Id: Mail.pm,v 1.8 2001/07/06 06:13:09 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -13,11 +13,11 @@ require 5.004;
 use MIME::Parser;
 
 use strict;
-use warnings;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.01";
+$VERSION    = "0.02";
 @EXPORT     = qw();
+$^W++;
 
 sub new {
 	my $call = shift;
@@ -30,7 +30,7 @@ sub new {
 	$p->output_to_core(1);	
 
 	$self->{RAW}	= $header.$body;
-	$self->{HEADER} = \%header;
+	$self->{HEADER} = $header;
 	$self->{BODY}	= $body;
 	$self->{ENTITY}	= $p->parse_data($self->{RAW});
 
