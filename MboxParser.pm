@@ -72,7 +72,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.33";
+$VERSION	= "0.35";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
