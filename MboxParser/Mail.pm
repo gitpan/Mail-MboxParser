@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.32";
+$VERSION    = "0.33";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -964,7 +964,7 @@ Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fa
 
 =head1 VERSION
 
-This is version 0.34.
+This is version 0.36.
 
 =head1 AUTHOR AND COPYRIGHT
 

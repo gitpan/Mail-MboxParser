@@ -72,7 +72,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.35";
+$VERSION	= "0.36";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -705,7 +705,7 @@ Kenn Frankel (kenn@kenn.cc) kindly patched the broken split-header routine and a
 
 =head1 VERSION
 
-This is version 0.34.
+This is version 0.36.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD); 
-$VERSION 	= "0.02";
+$VERSION 	= "0.03";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -118,7 +118,7 @@ For more details, see L<Mail::Mailer>
 
 =head1 VERSION
 
-This is version 0.34.
+This is version 0.36.
 
 =head1 AUTHOR AND COPYRIGHT
 
