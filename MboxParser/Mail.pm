@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.42";
+$VERSION    = "0.43";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -93,7 +93,7 @@ sub init (@) {
     my ($header, $body, $conf) = @args;
 
     $self->{HEADER}      = ref $header ? $header : [ split /$NL/, $header ];
-    $self->{HEADER_HASH} = \&split_header;
+    $self->{HEADER_HASH} = \&_split_header;
     $self->{BODY}        = ref $body ? $body : [ split /$NL/, $body ];
     $self->{TOP_ENTITY}  = 0;
     $self->{ARGS}        = $conf;
@@ -907,6 +907,22 @@ sub _get_attachment {
     return $file;
 }
     
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<as_string>
+
+Returns the message as one string. This is the method that string overloading
+depends on, so these two are the same:
+
+    print $msg;
+    
+    print $msg->as_string;
+
+=back
+
+=cut
 
 sub as_string {
     my $self = shift;
@@ -944,7 +960,7 @@ sub _recipients($) {
 
 # patch provided            by Kenn Frankel
 # additional corrections    by Nathan Uno
-sub split_header {
+sub _split_header {
     local $/ = $NL;
     my ($self, $header, $decode) = @_;
     my @headerlines = @{ $header };
@@ -1072,7 +1088,7 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.52.
+This is version 0.53.
 
 =head1 AUTHOR AND COPYRIGHT
 

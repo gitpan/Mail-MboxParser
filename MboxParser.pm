@@ -87,7 +87,7 @@ use IO::Seekable;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.52";
+$VERSION	= "0.53";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -181,7 +181,7 @@ like an ordinary mailbox-file you don't need to be concerned about loss of data
 or so once you have been walking through the mailbox-data. No data will be lost
 and it'll all be fine and smooth.
 
-=over 8
+=back
 
 =head2 Specifying parser options
 
@@ -190,6 +190,8 @@ parsing. To get the most speed out of it, you can tweak some of its options.
 Arguably, you even have to do that in order to make it use caching. Options for
 the parser are given via the I<parseropts> switch that expects a reference to a
 hash as values. The values you can specify are:
+
+=over 8
 
 =item enable_cache
 
@@ -211,8 +213,6 @@ it silently falls back to the pure Perl parser.
 When the module was unable to create a C<Mail::Mbox::MessageParser> object, it
 will fall back to the old parser in the hope that the construction of the
 object then succeeds.
-
-=back
 
 =cut
 
@@ -978,7 +978,7 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.52.
+This is version 0.53.
 
 =head1 AUTHOR AND COPYRIGHT
 

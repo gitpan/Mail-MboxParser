@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.14";
+$VERSION 	= "0.15";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -37,12 +37,12 @@ sub init(@) {
 
     $self->{ARGS}->{decode} ||= 'NEVER';
 
-    $self->make_decoder($ent->head->mime_encoding) 
+    $self->_make_decoder($ent->head->mime_encoding) 
 	if $self->{ARGS}->{decode} =~ /BODY|ALL/;;
     $self;
 }
 
-sub make_decoder {
+sub _make_decoder {
     my ($self, $enc) = @_;
     if ($enc eq 'base64') {
 	require MIME::Base64;
@@ -326,7 +326,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.52.
+This is version 0.53.
 
 =head1 AUTHOR AND COPYRIGHT
 

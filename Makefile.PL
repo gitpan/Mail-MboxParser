@@ -39,4 +39,5 @@ WriteMakefile(
 		      File::Temp		=> 0,
                     },
     DISTNAME     => 'Mail-MboxParser',
+    clean	 => { FILES => "t/cache" },
 );
