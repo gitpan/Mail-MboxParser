@@ -4,18 +4,19 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.18 2001/08/05 10:27:46 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.20 2001/08/13 16:14:34 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
 require 5.004;
 
 use MIME::Parser;
+use Mail::MboxParser::SpamDetector;
 
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.10";
+$VERSION    = "0.11";
 @EXPORT     = qw();
 $^W++;
 
@@ -90,6 +91,10 @@ sub id {
 	return $id;
 }
 
+# --------------------
+# MIME-related methods
+#---------------------
+
 sub num_entities {
 	my $self = shift;
 	# closure $self->{ENTITY} only defined
@@ -133,26 +138,52 @@ sub store_entity_body {
 
 sub store_attachement {
 	my $self = shift;
-	my ($num, $path) = @_;
+	my ($num, $path, $code, @args) = @_;
 	
 	$path = "." if not $path;
 	$path =~ s/\/$//;
+
+	if ($code and ref $code ne 'CODE') {
+		warn	"Error: Second argument for store_attachement must be",
+				" a coderef. Using filename from header instead";
+		undef $code; undef @args;
+	}
 	
 	if ($num < $self->num_entities) {
-		my $file = $self->get_entities($num)->head->recommended_filename;
-		return if not $file; 
+		my $file = $self->get_entities($num)->head->recommended_filename; 
+		return if not $file;
+		if ($code) { $file = $code->($self, $num, @args) }
 		open ATT, ">$path/$file";
 		$self->store_entity_body($num, \*ATT);
 		close ATT ;
+		return $file;
 	}
+	return;
 }
 
 sub store_all_attachements {
 	my $self = shift;
-	my $path = shift;
-	for (0 .. $self->num_entities - 1) {
-		$self->store_attachement($_, $path);
+	my ($path, $code, @args) = @_;
+	if ($code and ref $code ne 'CODE') {
+		warn 	"Error: Second argument for store_all_attachements must be", 
+				" a coderef. Using filename from header instead"; 
+		undef $code; undef @args;
 	}
+	my @files;
+	for (0 .. $self->num_entities - 1) {
+		push @files, $self->store_attachement($_, $path, $code, @args);
+	}
+	return @files;
+}
+
+# --------------------
+# spam-related methods
+# --------------------
+
+sub is_spam {
+	my ($self, %args) = @_; 
+	my $detector	= Mail::MboxParser::SpamDetector->new($self, %args);
+	return $detector->classify;
 }
 
 # patch provided by Kenn Frankel
@@ -187,7 +218,7 @@ __END__
 
 =head1 NAME
 
-Mail::MboxParser::Mail - Provide a mail-objects and methods upon
+Mail::MboxParser::Mail - Provide mail-objects and methods upon
 
 =head1 SYNOPSIS
 
@@ -195,7 +226,7 @@ See L<Mail::MboxParser> for examples on usage.
 
 =head1 DESCRIPTION
 
-Mail::MboxParser::Mail objects are usually not created directly though, in theory, they could be.
+Mail::MboxParser::Mail objects are usually not created directly though, in theory, they could be. A description of the provided methods can be found in L<Mail::MboxParser>.
 
 Documentation will be added as soon as it becomes useful which probably happens when Mail::MboxParser can also write to mailboxes.
 

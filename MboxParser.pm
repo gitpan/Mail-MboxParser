@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.19 2001/08/05 10:27:04 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.22 2001/08/13 16:19:31 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.10";
+$VERSION	= "0.11";
 @EXPORT		= qw();
 $^W++;
 
@@ -224,14 +224,34 @@ and could be shortened to this:
 
  $mail->store_entity_body(0, \*FILEHANDLE);
 
-=item store_attachement(n, path)
+=item store_attachement(n, path, [coderef [,args]])
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
-It uses the recommended-filename found in the MIME-header. 'path' is the place where the new file will go to.
+It uses the recommended-filename found in the MIME-header unless a 'coderef' has been given. The coderef is a reference to a subroutine whose first argument will always be the Mail::MboxParser::Mail object and  whose second argument is the index of the current MIME-entity that is processed. The return value is used as the filename under which the attachement is to be saved. Any additional arguments that you want to pass to the coderef can be added as list behind 'coderef'. 'path' is the place where the new file will go to. Example:
 
-=item store_all_attachements(path)
+	my $coderef = 
+		sub {
+ 			my ($msg, $n, @args) = @_;
+			return $msg->id."_$n";
+		};
+	my @additional = qw(Foo Bar);
+ 	$msg->store_attachement(1, "/home/ethan/", $coderef, @additional);
+
+This will save the attachement found in the second entity under the name that consists of the message-ID and the appendix "_1" since the above code works on the second entity (that is, with index = 1). @additional isn't used in this example but should demonstrate how to pass additional arguments.
+
+Returns undef if entity did not contain a saveable attachement, the filename otherwise.
+
+=item store_all_attachements(path, [coderef [,args]])
 
 Walks through an entire mail and stores all apparent attachements to 'path'. See the supplied store_att.pl script in the eg-directory of the package to see a useful example.
+
+As for 'coderef', read store_attachement.
+
+Returns a list of files that has been succesfully saved.
+
+=item is_spam
+
+Sorry, no documentation on that yet before this is properly implemented. You can, however, try to find out yourself. ;-)
 
 =back
 
