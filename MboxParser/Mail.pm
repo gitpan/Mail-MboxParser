@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.40";
+$VERSION    = "0.41";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -705,31 +705,8 @@ EOW
     }
 
     if ($num < $self->num_entities) {
-	my $file = eval { $self->get_entities($num)->head->recommended_filename };
-	$self->{LAST_LOG} = $@;
-	if (not $file) {
-	    # test for Content-Disposition
-	    if (! $self->get_entities($num)->head->get('content-disposition')) {
-		$self->{LAST_ERR} = "No attachment in entity $num";
-		return;
-	    }
-	    else {
-		my ($type, $filename) = split /;\s*/, 
-		$self->get_entities($num)->head->get('content-disposition');
-		if ($type ne 'attachment') {
-		    $self->{LAST_ERR} = "No attachment in entity $num";
-		    return;
-		}
-		else {
-		    $filename =~ /filename\*?=(.*?''?)?(.*)$/;
-		    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-		    if (! $file) {
-			$self->{LAST_ERR} = "No attachment in entity $num";
-			return;
-		    }
-		}
-	    }
-	}
+	my $file = $self->_get_attachment( $num );
+	return if ! defined $file;
 
 	if (-e $path && not -d _) {
 	    $self->{LAST_ERR} = "$path is a file";
@@ -749,12 +726,13 @@ EOW
                                                         
         if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
             $file = MIME::Words::decode_mimewords($file);
-	    if ($args{encode} and HAVE_ENCODE) {
-		$file = Encode::encode($args{encode}, $file);
-	    }
         }
     
         return if defined $args{store_only} and $file !~ /$args{store_only}/;
+
+	if ($args{encode} and HAVE_ENCODE) {
+	    $file = Encode::encode($args{encode}, $file);
+	}
 
 	local *ATT; 
 	if (open ATT, ">$path/$file") {
@@ -875,30 +853,8 @@ sub get_attachments(;$) {
     my %mapping;
 
     for my $num (0 .. $self->num_entities - 1) {
-	my $file = eval { $self->get_entities($num)->head->recommended_filename };
-	$self->{LAST_LOG} = $@;
-	if (! $file) {
-	    # test for Content-Disposition
-	    if (! $self->get_entities($num)->head->get('content-disposition')) {
-		next;
-	    } else {
-		my ($type, $filename) = split /;\s*/, 
-		$self->get_entities($num)->head->get('content-disposition');
-		if ($type eq 'attachment') {
-		    $filename =~ /filename\*?=(.*?''?)?(.*)$/;
-		    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-		}
-	    }
-	}
-
-	next if ! $file;
-
-	if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
-	    $file = MIME::Words::decode_mimewords($file);
-	}
-
-	$mapping{$file} = $num;
-
+	my $file = $self->_get_attachment($num);
+	$mapping{ $file } = $num if defined $file;
     }
 
     if ($name) {
@@ -917,7 +873,35 @@ sub get_attachments(;$) {
 
     return \%mapping;
 }
+
+sub _get_attachment {
+    my ($self, $num) = @_;
+    my $file = eval { $self->get_entities($num)->head->recommended_filename };
+    $self->{LAST_LOG} = $@;
+    if (! $file) {
+	# test for Content-Disposition
+	if (! $self->get_entities($num)->head->get('content-disposition')) {
+	    return;
+	} else {
+	    my ($type, $filename) = split /;\s*/, 
+	    $self->get_entities($num)->head->get('content-disposition');
+	    if ($type eq 'attachment') {
+		$filename =~ /filename\*?=(.*?''?)?(.*)$/;
+		($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+	    }
+	}
+    }
+
+    return if not $file;
+
+    if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
+	$file = MIME::Words::decode_mimewords($file);
+    }
     
+    return $file;
+}
+    
+
 sub as_string {
     my $self = shift;
     my $js = $self->{ARGS}->{join_string};
@@ -1081,7 +1065,7 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.47.
+This is version 0.48.
 
 =head1 AUTHOR AND COPYRIGHT
 

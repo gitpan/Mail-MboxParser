@@ -1,3 +1,16 @@
+v0.48 (Wed May 19 07:36:34 CEST 2004)
+
+    + The previous patch was only a partial solution. If an
+      attachment wasn't saved, most of the time it meant that
+      it wasn't even recognized as such. store_attachment() and
+      store_all_attachments() should now find more attachments
+      (not more than there are, hopefully;-)
+    + Mark Mykkanen <shamu112 AT yahoo DOT com> made me aware that
+      the module wouldn't deal correctly with non-seekable filehandles.
+      Fixed now
+    + Localized *_ properly
+    + Replaced 0 with SEEK_SET where it wasn't already used
+
 v0.47 (Mon May  3 08:38:45 CEST 2004)
 
     + store_attachment/store_all_attachment have new

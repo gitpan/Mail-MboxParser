@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD); 
-$VERSION 	= "0.04";
+$VERSION 	= "0.05";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 

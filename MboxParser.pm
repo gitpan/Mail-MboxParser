@@ -87,7 +87,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.47";
+$VERSION	= "0.48";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -243,6 +243,8 @@ change the characteristics of a mailbox on the fly.
 
 sub open (@) {
     my ($self, @args) = @_;
+    
+    local *_;
 
     my $source 	= shift @args;
 
@@ -266,10 +268,10 @@ EOC
     }
 
     # a filehandle
-    elsif (ref $source eq 'GLOB' && $source != \*STDIN) { 
+    elsif (ref $source eq 'GLOB' && seek $source, 0, SEEK_CUR) { 
 	$self->{READER} = $source;
     }
-
+    
     # else
     else {
 	(my $fh, $file_name) = tempfile(UNLINK => 1) or croak <<EOC;
@@ -277,11 +279,11 @@ Error: Could not create temporary file. This is very weird ($!).
 EOC
 	if    (ref $source eq 'SCALAR') 	{ print $fh ${$source} }
 	elsif (ref $source eq 'ARRAY')  	{ print $fh @{$source} }
-	elsif ($source == \*STDIN) 	  	{ print $fh <STDIN> }
+	elsif (ref $source eq 'GLOB') 	  	{ print $fh $_ while <$source> }
+	seek $fh, 0, SEEK_SET;
 	$self->{READER} = $fh;
     }
 
-    # do line-ending stuff
     if ($self->{CONFIG}->{oldparser} or ! HAVE_MSGPARSER 
         or ! defined $file_name) {
         binmode $self->{READER};
@@ -323,6 +325,7 @@ EOC
         $self->{PARSER} = Mail::Mbox::MessageParser->new($opts);
     } 
 
+    # do line-ending stuff
     if (! exists $self->{CONFIG}->{NL}) {
         $self->{CONFIG}->{NL} = 'AUTO';
     }
@@ -334,7 +337,7 @@ EOC
     else                  { $self->{NL} = $nl }
     $Mail::MboxParser::Mail::NL = $self->{NL};
 
-    seek $self->{READER}, 0, 0 if ! $self->{PARSER};
+    seek $self->{READER}, 0, SEEK_SET if ! $self->{PARSER};
     return;
 }
 
@@ -389,7 +392,8 @@ sub get_messages_old() {
 
     my @messages;
 
-    seek $h, 0, 0; 
+    seek $h, 0, SEEK_SET; 
+    local *_;
     while (<$h>) {
 
 	# entering header
@@ -525,6 +529,8 @@ sub next_message_old() {
     # this method is also invoked by get_message_new():
     my %newopts = %{ $self->{CONFIG} };
     $newopts{ join_string } = '';
+
+    local *_;
     while (<$h>) { 
 
 	$got_header = 1 if eof($h) || /$empty_line/ and $in_header;
@@ -667,14 +673,16 @@ sub make_index() {
     $self->reset_last;
     my $h    = $self->{READER};
     
-    seek $h, 0, 0;
+    seek $h, 0, SEEK_SET;
     
     my $c = 0;
+
+    local *_;
     while (<$h>) {
         $self->{MSG_IDX}->{$c} = tell($h) - length, $c++ 
             if /$from_date/;
     }
-    seek $h, 0, 0;
+    seek $h, 0, SEEK_SET;
 } 
 
 # ----------------------------------------------------------------
@@ -729,7 +737,8 @@ sub nmsgs() {
     if (not $self->{READER}) { return "No mbox opened" }
     if (not $self->{NMSGS}) {
 	my $h = $self->{READER};
-	seek $h, 0, 0;
+	seek $h, 0, SEEK_SET;
+	local *_;
 	while (<$h>) {
 	    $self->{NMSGS}++ if /$from_date/;
 	}
@@ -764,7 +773,7 @@ sub _detect_nl {
     my $h = $self->{READER};
     my $newline;
     
-    seek $h, 0, 0;
+    seek $h, 0, SEEK_SET;
     while (sysread $h, (my $c), 1) {
         if (ord($c) == 13) {
             $newline = "\015";        
@@ -948,7 +957,7 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.47.
+This is version 0.48.
 
 =head1 AUTHOR AND COPYRIGHT
 
