@@ -1,3 +1,9 @@
+v0.44 (Sat Jan  3 09:40:02 CET 2004)
+
+    + Mail::MboxParser had problems with older versions
+      of FileHandle::Unget. Makefile.PL now checks
+      that a useable version is installed
+
 v0.43 (Sat Oct 18 16:23:29 CEST 2003)
 
     + Return values of File::Temp::tempfile() were 

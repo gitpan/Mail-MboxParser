@@ -1,8 +1,8 @@
 use ExtUtils::MakeMaker;
 
-eval { require Mail::Mbox::MessageParser };
+use constant MMMPARSER => eval { require Mail::Mbox::MessageParser; 1 } || 0;
 
-if ($@) {
+if (!MMMPARSER) {
     warn <<EOWARN;
 *******************
 You don't have Mail::Mbox::MessageParser installed. If you want to get
@@ -15,11 +15,24 @@ platform.
 EOWARN
 }
 
+eval { require FileHandle::Unget };
+
+if (MMMPARSER && !$@ && FileHandle::Unget->VERSION < 0.13) {
+    die <<EOCROAK;
+*******************
+Since you have Mail::Mbox::MessageParser installed, you also need
+version 0.13 of FileHandle::Unget. 
+
+Please install it before running me again.
+*******************
+EOCROAK
+}
+
 WriteMakefile(
     AUTHOR       => 'Tassilo v. Parseval <tassilo.parseval@post.rwth-aachen.de',
     NAME         => 'Mail::MboxParser',
     PMLIBDIRS    => ['MboxParser'],
-    VERSION_FROM => 'MboxParser.pm', # finds $VERSION
+    VERSION_FROM => 'MboxParser.pm', 
     PREREQ_PM    => { MIME::Tools               => 5.0,
                       MIME::QuotedPrint         => 0, 
                     },

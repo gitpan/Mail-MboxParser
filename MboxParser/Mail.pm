@@ -1004,7 +1004,7 @@ Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fa
 
 =head1 VERSION
 
-This is version 0.43.
+This is version 0.44.
 
 =head1 AUTHOR AND COPYRIGHT
 

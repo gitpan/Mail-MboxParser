@@ -80,7 +80,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.43";
+$VERSION	= "0.44";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -837,7 +837,7 @@ David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing i
 
 =head1 VERSION
 
-This is version 0.43.
+This is version 0.44.
 
 =head1 AUTHOR AND COPYRIGHT
 

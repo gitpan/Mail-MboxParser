@@ -28,3 +28,4 @@ t/old_7_attach.t
 t/old_8_from_trace.t
 t/old_9_direct_invok.t
 t/testbox
+META.yml                                 Module meta-data (added by MakeMaker)
