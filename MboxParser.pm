@@ -83,11 +83,11 @@ use Mail::MboxParser::Mail;
 use File::Temp qw/tempfile/;
 use Symbol;
 use Carp;
-use Fcntl qw/:seek/;
+use IO::Seekable;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.49";
+$VERSION	= "0.50";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -963,7 +963,7 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.49.
+This is version 0.50.
 
 =head1 AUTHOR AND COPYRIGHT
 

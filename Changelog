@@ -1,3 +1,8 @@
+v0.50 (Sun Dec 12 09:38:47 CET 2004)
+
+    + At some point in the past this module must have
+      stopped working on 5.5.x perls, fixed now
+
 v0.49 (Wed Aug 11 09:43:22 CEST 2004)
 
     + Dealing with uuencoded MIME parts added + 
