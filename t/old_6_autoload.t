@@ -10,7 +10,7 @@ my $src = File::Spec->catfile('t', 'testbox');
 
 BEGIN { plan tests => 5 };
 
-my $mb  = Mail::MboxParser->new($src);
+my $mb  = Mail::MboxParser->new($src, oldparser => 1);
 my @a   = $mb->get_messages;
 my $msg = $a[8];
 ok(defined $mb);

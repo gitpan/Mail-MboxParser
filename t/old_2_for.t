@@ -11,7 +11,7 @@ my $src = File::Spec->catfile('t', 'testbox');
 
 BEGIN { plan tests => 28 };
 
-my $mb    = Mail::MboxParser->new($src);
+my $mb    = Mail::MboxParser->new($src, oldparser => 1);
 my @mails = $mb->get_messages;
 
 # 1

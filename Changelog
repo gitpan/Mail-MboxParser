@@ -1,4 +1,11 @@
-# $Id: Changelog,v 1.37 2002/03/01 10:10:27 parkerpine Exp $
+v0.39 (Tue Aug  5 08:06:50 CEST 2003)
+
+    + now uses David Coppit's new Mail::Mbox::MessageParser module 
+      which provides much faster and more robust parsing 
+      (the old parser can still be used (see docs))
+      !! therefore 0.39 should probably be marked as beta !!
+    + removed the silly benchmark results from the PODs
+      (they are no longer up-to-date)
 
 v0.38 (Wed Jan 15 14:34:49 CET 2003)
 

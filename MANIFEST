@@ -18,4 +18,13 @@ t/6_autoload.t
 t/7_attach.t
 t/8_from_trace.t
 t/9_direct_invok.t
+t/old_1_mmb.t
+t/old_2_for.t
+t/old_3_while.t
+t/old_4_index.t
+t/old_5_body.t
+t/old_6_autoload.t
+t/old_7_attach.t
+t/old_8_from_trace.t
+t/old_9_direct_invok.t
 t/testbox

@@ -11,8 +11,12 @@ my $src = File::Spec->catfile('t', 'testbox');
 
 BEGIN { plan tests => 28 };
 
-my $mb    = Mail::MboxParser->new($src);
-my @mails = $mb->get_messages;
+my $mb    = Mail::MboxParser->new($src, oldparser => 3);
+my @mails; 
+
+while (my $msg = $mb->next_message) {
+    push @mails, $msg;
+}
 
 # 1
 print "Testing num of messages...\n";
@@ -37,7 +41,7 @@ for my $msg (@mails[0..7]) {
     ok($msg->get_attachments, undef);
 }
 
-# 26-28
+# 10-28
 print "Testing attachments on multipart...\n";
 ok($mails[8]->num_entities, 3);
 ok($mails[8]->get_attachments);

@@ -1,12 +1,10 @@
-$Id: README,v 1.13 2002/02/21 08:56:19 parkerpine Exp $
-
 There are now packages for PPM available as well! See below the bits on 
 installation to learn how to install those.
 
 --------------------------------------------------------------------------------
 
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes.
-This document describes version 0.38.
+This document describes version 0.39.
 
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
 access to header fields, body and MIME-parts. It is for those people who 
@@ -17,11 +15,12 @@ supplied store_att.pl script for an example.
 
 Prerequisites:
 --------------
-    
+
     + MIME::Tools (probably >= 5.0)
     + MIME::QuotedPrint (don't know which version)
     
     optional:
+    + Mail::Mbox::MessageParser (highly recommended!)
     + URI::Find if you want to use Mail::MboxParser::Mail::Body->extract_urls
 
 Installation:
@@ -43,9 +42,17 @@ Installation:
 
     Win-systems:
     ------------
-    On request there is now also a PPM-version of each new package 
-    available (unless I forget to make one;-). Start ppm and do the 
-    following:
+    I was made aware that ActiveState now turns CPAN additions into
+    PPM distributions automatically. However, this may not happen when
+    their build system enounters some problems. I'll simply assume that
+    Mail::MboxParser wont make problems but I can't be sure. If it turns
+    out that there is no PPM dist available of the current version of this
+    module, please contact me by mail and I will create one and make it
+    publically available.
+   
+    Therefore, first try to install it from the default repository of
+    ActiveState. If it doesn't provide the most current release, try 
+    instead:
     
     ppm> set repository sourceforge http://mail-mboxparser.sourceforge.net/ 
     ppm> search Mail-MboxParser             <== optional!
@@ -53,7 +60,9 @@ Installation:
          [or possibly just:
          install Mail-MboxParser
          ]
-
+    
+    If that wont yield anything either, contact me.
+    
 Autoloader:
 -----------
 Read the Mail::MboxParser::Mail docs for invoking external methods.
@@ -62,60 +71,6 @@ will work:
 
 	$mail->effective_type; # from MIME::Entity
 
-Methods:
---------
-
-Mail::MboxParser::Base (not to be instantiated)
-	::error (error of last operation if any)
-	::log (logs internal errors in rare cases)
-	
-Mail::MboxParser
-	::new (of course)
-	::open
-	::get_messages  (all in array)
-    ::get_message(n) 
-    ::next_message
-    ::rewind
-    ::set_pos
-    ::current_pos
-    ::get_pos(n)    (of message n)
-    ::make_index
-	::nmsgs (num of messages in mailbox)
-	
-Mail::MboxParser::Mail
-	::new (usually internally called by Mail::MboxParser::get_messages)
-	::header (hash-ref with all header-fields)
-    ::from_line
-    ::trace (received-lines as list) 
-	::body (Mail::MboxParser::Mail::Body object)
-	::find_body (index number that should be the main-body of email)
-    ::get_field 
-	::from (hash-ref)
-	::to (array of hash-refs)
-    ::cc (same as to())
-	::id
-	::num_entities (no of MIME-entities)
-	::get_entities (array or scalar if called with a number)
-	::get_entity_body (body of the n-th entity as single string)
-	::store_attachement 
-	::store_all_attachements (just save all saveable attachements to filehandle)
-    ::make_convertable (create a Mail::MboxParser::Mail::Convertable)
-
-Mail::MboxParser::Mail::Body
-	::new (done internally)
-    ::as_string
-    ::as_lines
-	::signature (signature of the body if any)
-	::extract_urls (hash-ref with url and context)
-    ::quotes (hash-ref of array-refs)
-    
-Mail::MboxParser::Mail::Convertable
-    ::new 
-    ::delete_from_header
-    ::replace_in_header
-    ::add_to_header
-    ::send
-    
 Have a look into the eg-directory of the package for some (or one) example(s).
 
 Contact:

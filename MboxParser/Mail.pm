@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.36";
+$VERSION    = "0.37";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -87,6 +87,7 @@ sub init (@) {
 
     # make sure line-endings are ok if called directly
     if (caller(1) ne 'Mail::MboxParser') {
+        $self->{ARGS}->{join_string} = '';
         local $_;
         for (@{ $self->{HEADER} }, @{ $self->{BODY} }) {
             $_ .= "\n" unless /.*\n$/;
@@ -472,7 +473,7 @@ sub get_entities(@) {
             $Parser = new MIME::Parser; $Parser->output_to_core(1);
         }
 
-        my $data = join "", @{ $self->{HEADER} }, @{ $self->{BODY} };
+        my $data = $self->as_string;
 		$self->{TOP_ENTITY} = $Parser->parse_data($data);
 	}
 	
@@ -840,8 +841,8 @@ sub get_attachments(;$) {
     
 sub as_string {
 	my $self = shift;
-    
-	return join "", @{ $self->{HEADER} }, @{ $self->{BODY} };
+    my $js = $self->{ARGS}->{join_string};
+	return join $js, @{ $self->{HEADER} }, @{ $self->{BODY} };
 }
 
 sub _recipients($) {
@@ -947,8 +948,9 @@ sub AUTOLOAD {
                         $Parser = new MIME::Parser; 
                         $Parser->output_to_core(1);
                     }
+                    my $js = $self->{ARGS}->{join_string};
                     $self->{TOP_ENTITY} = 
-                        $Parser->parse_data(join "", @{$self->{HEADER}},
+                        $Parser->parse_data(join $js, @{$self->{HEADER}},
                                                      @{$self->{BODY}})
                             if ref $self->{TOP_ENTITY} ne 'MIME::Entity';
                     return $self->{TOP_ENTITY}->$call(@args);

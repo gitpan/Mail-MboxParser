@@ -11,10 +11,7 @@ my $src = File::Spec->catfile('t', 'testbox');
 
 BEGIN { plan tests => 19 };
 
-my $mb      = Mail::MboxParser->new($src, 
-                parseropts => { cache_file_name => 
-                                    File::Spec->catfile(qw/t cache/),
-                                enable_cache    => 1, });
+my $mb      = Mail::MboxParser->new($src, oldparser => 1);
 
 # 1 - 9
 my $c = 0;
