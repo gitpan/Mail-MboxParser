@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.17 2001/08/04 12:09:58 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.18 2001/08/05 10:27:46 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -15,7 +15,7 @@ use MIME::Parser;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.09";
+$VERSION    = "0.10";
 @EXPORT     = qw();
 $^W++;
 
@@ -52,16 +52,34 @@ sub body {
 
 sub from {
 	my $self = shift;
-	my %from;
 	my %h = %{$self->header};
 	my $from = $h{from};
 	my ($name, $email) = split /\s</, $from;
 	$email =~ s/>$//g unless not $email;
 	if ($name and not $email) {
 		$email = $name;
-		$name = "";
+		$name  = "";
 	}
 	return {(name => $name, email => $email)};
+}
+
+sub to {
+	my $self = shift;
+	my %h = %{$self->header};
+	my $to = $h{to};
+	my @tos = split /,/, $to;
+	map { $_ =~ s/^\s+|\s+$//g } @tos; # remove leading or trailing whitespaces
+	my @to_line;
+	for my $pair (@tos) {
+		my ($name, $email) = split /\s</, $pair;
+		$email =~ s/>$//g unless not $email;
+		if ($name and not $email) {
+			$email = $name;
+			$name  = "";
+		}
+		push @to_line, {(name => $name, email => $email)};
+	}
+	return @to_line;
 }
 
 sub id {

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.18 2001/08/04 12:09:14 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.19 2001/08/05 10:27:04 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.09";
+$VERSION	= "0.10";
 @EXPORT		= qw();
 $^W++;
 
@@ -187,6 +187,15 @@ Returns the body as a single string.
 =item from
 
 Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty.
+
+=item to
+
+Returns an array of hash-references of all to-fields in the mail-header. Fields are the same as those of $mail->from. Example:
+
+	for my $recipient ($mail->to) {
+		print $recipient->{name} || "<no name>", "\n";
+		print $recipient->{email};
+	}
 
 =item id
 

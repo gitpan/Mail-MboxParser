@@ -1,4 +1,8 @@
-# $Id: Changelog,v 1.10 2001/08/04 12:08:38 parkerpine Exp $
+# $Id: Changelog,v 1.11 2001/08/05 10:26:46 parkerpine Exp $
+
+v0.10 (Sun Aug  5 12:24:56 CEST 2001)
+	+ new method Mail::MboxParser::Mail->to
+	+ additional tests for the above
 
 v0.09 (Sat Aug  4 13:58:47 CEST 2001)
 	+ multi-line header-fields are now correctly reckognized
