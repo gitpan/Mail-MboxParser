@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.39";
+$VERSION    = "0.40";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -51,6 +51,11 @@ my $Parser;
 use overload '""' => \&as_string, fallback => 1;
 
 BEGIN { $Mail::MboxParser::Mail::NL = "\n" }
+
+use constant 
+    HAVE_ENCODE	    => eval { require Encode; 1 } || 0;
+use constant	
+    HAVE_MIMEWORDS  => eval { require MIME::Words; 1 } || 0;
 
 # ----------------------------------------------------------------
 
@@ -607,24 +612,30 @@ into the current directory under the recommended filename given in the
 MIME-header. 'options' are specified in key/value pairs:
 
     key:       | value:        | description:
-    ===========|===============|===============================
-    path       | relative or   | directory to store attachment
-    (".")      | absolute      |
-               | path          |
-    -----------|---------------|-------------------------------
-    store_only | a compiled    | store only files whose file
-               | regex-pattern | names match this pattern
-    -----------|---------------|-------------------------------
-    code       | an anonym     | first argument will be the 
-               | subroutine    | $msg-object, second one the 
-               |               | index-number of the current
-               |               | MIME-part
-               |               | should return a filename for
-               |               | the attachment
-    -----------|---------------|-------------------------------
-    args       | additional    | this array-ref will be passed  
-               | arguments as  | on to the 'code' subroutine
-               | array-ref     | as a dereferenced array
+    ===========|================|===============================
+    path       | relative or    | directory to store attachment
+    (".")      | absolute       |
+               | path           |
+    -----------|----------------|-------------------------------
+    encode     | encoding       | Some platforms store files 
+               | suitable for   | in e.g. UTF-8. Specify the
+               | Encode::encode | appropriate encoding here and
+               |                | and the filename will be en-
+               |                | coded accordingly.
+    -----------|----------------|-------------------------------
+    store_only | a compiled     | store only files whose file
+               | regex-pattern  | names match this pattern
+    -----------|----------------|-------------------------------
+    code       | an anonym      | first argument will be the 
+               | subroutine     | $msg-object, second one the 
+               |                | index-number of the current
+               |                | MIME-part
+               |                | should return a filename for
+               |                | the attachment
+    -----------|----------------|-------------------------------
+    args       | additional     | this array-ref will be passed  
+               | arguments as   | on to the 'code' subroutine
+               | array-ref      | as a dereferenced array
 
 Example:
 
@@ -655,6 +666,17 @@ could also use a non-compiled pattern if you want, but that would make for
 instance case-insensitive matching a little cumbersome:
 
     store_only => '(?i)\.jpg$'
+    
+If you are working on a platform that requires a certain encoding for filenames
+on disk, you can use the 'encode' option. This becomes necessary for instance on
+Mac OS X which internally is UTF-8 based. If the filename contains 8bit characters 
+(like the German umlauts or French accented characters as in 'é'), storing the
+attachment under a non-encoded name will most likely fail. In this case, use something 
+like this:
+
+    $msg->store_attachment(1, path => '/tmp', encode => 'utf-8');
+
+See L<Encode::Supported> for a list of encodings that you may use.
     
 Returns the filename under which the attachment has been saved. undef is
 returned in case the entity did not contain a saveable attachement, there was
@@ -709,12 +731,12 @@ EOW
 	    }
 	}
 
-	if (-e $path && not -d $path) {
+	if (-e $path && not -d _) {
 	    $self->{LAST_ERR} = "$path is a file";
 	    return;
 	}
 
-	if (not -e $path) {
+	if (not -e _) {
 	    if (not mkdir $path, 0755) {
 		$self->{LAST_ERR} = "Could not create directory $path: $!";
 		return;
@@ -725,9 +747,11 @@ EOW
 	    $file = $args{code}->($self, $num, @{$args{args}}) 
 	}
                                                         
-        if ($file =~ /^=\?/) { # decode qp if possible
-            eval { require MIME::Words };
-            $file = MIME::Words::decode_mimewords($file) if ! $@;
+        if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
+            $file = MIME::Words::decode_mimewords($file);
+	    if ($args{encode} and HAVE_ENCODE) {
+		$file = Encode::encode($args{encode}, $file);
+	    }
         }
     
         return if defined $args{store_only} and $file !~ /$args{store_only}/;
@@ -869,9 +893,8 @@ sub get_attachments(;$) {
 
 	next if ! $file;
 
-	if ($file =~ /^=\?/) { # decode qp if possible
-	    eval { require MIME::Words };
-	    $file = MIME::Words::decode_mimewords($file) if ! $@;
+	if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
+	    $file = MIME::Words::decode_mimewords($file);
 	}
 
 	$mapping{$file} = $num;
@@ -1018,8 +1041,8 @@ sub AUTOLOAD {
 }
 
 sub DESTROY {
-	my $self = shift;
-	undef $self;
+    my $self = shift;
+    undef $self;
 }
 
 
@@ -1058,7 +1081,7 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.46.
+This is version 0.47.
 
 =head1 AUTHOR AND COPYRIGHT
 
