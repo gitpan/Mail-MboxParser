@@ -1,6 +1,4 @@
-$Id: README,v 1.11 2001/12/11 15:26:39 parkerpine Exp $
-
-THIS IS A BETA RELEASE!!
+$Id: README,v 1.12 2002/01/31 09:32:05 parkerpine Exp $
 
 There are now packages for PPM available as well! See below the bits on 
 installation to learn how to install those.
@@ -8,8 +6,7 @@ installation to learn how to install those.
 --------------------------------------------------------------------------------
 
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. 
-In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient 
-which has not been intended anyway.
+
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
 access to header fields, body and MIME-parts. It is for those people who 
 find the above two module-sets too confusing and heavy-weighted. See the 
@@ -82,6 +79,8 @@ Mail::MboxParser
 Mail::MboxParser::Mail
 	::new (usually internally called by Mail::MboxParser::get_messages)
 	::header (hash-ref with all header-fields)
+    ::from_line
+    ::trace (received-lines as list) 
 	::body (Mail::MboxParser::Mail::Body object)
 	::find_body (index number that should be the main-body of email)
     ::get_field 

@@ -1,4 +1,10 @@
-# $Id: Changelog,v 1.32 2001/12/13 13:25:01 parkerpine Exp $
+# $Id: Changelog,v 1.33 2002/01/31 09:32:05 parkerpine Exp $
+
+v0.30 (Thu Jan 31 10:28:42 CET 2002)
+
+    + new methods for accessing the "From "-line and "Received: "-lines
+    + I did not receive any complains about the new features introduced
+      in the previous beta-release and so I assume they work pretty well
 
 v0.30_4 (Thu Dec 13 14:27:35 CET 2001)
 

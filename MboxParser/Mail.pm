@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.44 2001/12/13 13:47:37 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.46 2002/01/31 09:58:28 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -34,15 +34,15 @@ However, go on reading if you want to use methods from MIME::Entity and learn ab
 
 use Mail::MboxParser::Mail::Body;
 use Mail::MboxParser::Mail::Convertable;
-use MIME::Parser;
 use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD);
-$VERSION    = "0.26";
+$VERSION    = "0.27";
 @EXPORT     = qw();
 
-my $Parser = new MIME::Parser; $Parser->output_to_core(1);
+# we'll use it to store the MIME::Parser 
+my $Parser;
 
 use overload '""' => \&as_string, fallback => 1;
 
@@ -89,7 +89,60 @@ sub header() {
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
 	$self->reset_last;
 	
-	return $self->{HEADER_HASH}->($self->{HEADER}, $decode);
+	return $self->{HEADER_HASH}->($self, $self->{HEADER}, $decode);
+}
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<from_line>
+
+Returns the "From "-line of the message.
+
+=back
+
+=cut
+
+sub from_line() { 
+    my $self = shift;
+    $self->reset_last;
+    
+    $self->{HEADER_HASH}->($self, $self->{HEADER}, 'NEVER') 
+        if !exists $self->{FROM};
+        
+    if (! exists $self->{FROM}) {
+        $self->{LAST_ERR} = "Message did not contain a From-line";
+        return;
+    }
+    $self->{FROM};
+}
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<trace>
+
+This method returns the "Received: "-lines of the message as a list.
+
+=back
+
+=cut
+
+sub trace () {
+    my $self = shift;
+    $self->reset_last;
+
+    $self->{HEADER_HASH}->($self, $self->{HEADER}, 'NEVER') 
+        if ! exists $self->{TRACE};
+
+    if (! exists $self->{TRACE}) {
+        $self->{LAST_ERR} = "Message did not contain any Received-lines";
+        return;
+    }
+
+    @{ $self->{TRACE} };
 }
 
 # ----------------------------------------------------------------
@@ -355,6 +408,12 @@ sub get_entities(@) {
 	}
 	
 	if (ref $self->{TOP_ENTITY} ne 'MIME::Entity') {
+        
+        if (! defined $Parser) {
+            eval { require MIME::Parser; };
+            $Parser = new MIME::Parser; $Parser->output_to_core(1);
+        }
+
         my $data = join "", ref $self->{HEADER}
                                 ? @{$self->{HEADER}}
                                 : $self->{HEADER}, 
@@ -742,10 +801,11 @@ sub _recipients($) {
 
 # patch provided by Kenn Frankel
 sub split_header {
-	my ($header, $decode) = @_;
+	my ($self, $header, $decode) = @_;
 	my @headerlines = ref $header 
                         ? @{$header}
                         : split /\015?\012/, $header;
+
 	my @header;
     chomp @headerlines if ref $header;
  	foreach my $bit (@headerlines) {
@@ -756,7 +816,10 @@ sub split_header {
 	my ($key, $value);
 	my %header;
 	for (@header) {
-		unless (/^Received:\s/ or not /: /) {
+        
+        if    (/^Received:\s/) { push @{$self->{TRACE}}, substr($_, 10) }
+        elsif (/^From /)       { $self->{FROM} = $_ }
+        else {
 			$key   = substr $_, 0, index($_, ": ");
 			$value = substr $_, index($_, ": ") + 2;
             if ($decode eq 'ALL' || $decode eq 'HEADER') {
@@ -771,7 +834,7 @@ sub split_header {
 
 sub AUTOLOAD {
 	my ($self, @args) = @_;
-	(my $call = $AUTOLOAD) =~ s/.*\:\://;
+	(my $call = $AUTOLOAD) =~ s/.*:://;
 
     # for backward-compatibility
     if ($call eq 'store_attachement') { 
@@ -783,10 +846,20 @@ sub AUTOLOAD {
     
 	# test some potential classes that might implement $call
     { no strict 'refs';
+    
         for my $class (qw/MIME::Entity Mail::Internet/) {
+            eval "require $class";
             # we found a Class that implements $call
             if ($class->can($call)) {
+                
+                # MIME::Entity needed
                 if ($class eq 'MIME::Entity') {
+                    
+                    if (! defined $Parser) {
+                        eval { require MIME::Parser };
+                        $Parser = new MIME::Parser; 
+                        $Parser->output_to_core(1);
+                    }
                     $self->{TOP_ENTITY} = 
                         $Parser->parse_data(join "", ref $self->{HEADER}
                                                         ? @{$self->{HEADER}}
@@ -796,6 +869,7 @@ sub AUTOLOAD {
                     return $self->{TOP_ENTITY}->$call(@args);
                 }
 
+                # Mail::Internet needed
                 if ($class eq 'Mail::Internet') {
                     return Mail::Internet->new(
                         [ split /\n/, join "", ref $self->{HEADER}
@@ -804,8 +878,11 @@ sub AUTOLOAD {
                                             .$self->{BODY} ] 
                         );
                 }
+                
             }
+            
         }
+        
     }
 }
 

@@ -16,4 +16,5 @@ t/4_index.t
 t/5_body.t
 t/6_autoload.t
 t/7_attach.t
+t/8_from_trace.t
 t/testbox

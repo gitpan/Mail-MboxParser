@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.46 2001/12/13 13:26:26 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.47 2002/01/31 09:32:05 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -45,6 +45,11 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
         # ...
     }
 
+    # subscripting one message after the other
+    for my $idx (0 .. $mb->nmsgs - 1) {
+        my $msg = $mb->get_message($idx);
+    }
+
 =head1 DESCRIPTION
 
 This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
@@ -66,7 +71,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $OS);
-$VERSION	= "0.30_4";
+$VERSION	= "0.30";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -153,8 +158,8 @@ sub open (@) {
     $self->{CURR_POS} = 0;
 	
 	# supposedly a filename
-	if (not ref $source) {	
-		if (! -e $source) {
+	if (! ref $source) {	
+		if (! -f $source) {
 			croak <<EOC;
 Error: The filename you passed to open() does not refer to an existing file
 EOC
@@ -225,7 +230,6 @@ sub get_messages() {
 		# out of data, store message in Mail-object
         if ((/$from_date/ || eof) && $got_header) {
             push @body, $_ if eof; # don't forget last line!!
-            #$header = join '', @header;
 			$body 	= join '', @body;
 			my $m = Mail::MboxParser::Mail->new([ @header ], 
 												$body, 
