@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.14 2001/07/28 07:50:45 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.16 2001/07/29 10:33:03 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.06";
+$VERSION	= "0.07";
 @EXPORT		= qw();
 $^W++;
 
@@ -259,6 +259,40 @@ You guess it.
 The top-level MIME::Entity of a message. You can call any suitable methods from the MIME::tools upon this object to give you more specific access to MIME-parts.
 
 =back
+
+=head1 CAVEATS
+
+I have been working hard on making Mail::MboxParser eat less memory and as quick as possible. Due to that, two time and memory consuming matters are now called on demand. That is, parsing out the MIME-parts and turning the raw header into a hash have become closures.
+
+The drawback of that is that it may get inefficient if you often call 
+
+ $mail->header->{field}
+ 
+In this case you should probably save the return value of $mail->header (a hashref) into a variable since each time you call it the raw header is parsed.
+
+On the other hand, if you have a mailbox of, say, 25MB, and hold each header of each message in memory, you'll quickly run out of that. So, you can now choose between more performance and more memory.
+
+This all does not happen if you just parse a mailbox to extract one header-field (eg. subject), work with that and exit. In this case it will need both less memory and is still considerably quicker. :-)
+
+Below you see two tables produced by the Benchmark module. I compared my module (0.06) with Mail::Box, Mail::Folder and Mail::Folder::FastReader (grepmail), while the second table shows the same with 0.07 of Mail::MboxParser. I only let the modules iterate over the mailbox and count the number of messages by extracting them. There is no single header-field extracted. So keep that in mind. Mail::MboxParser is slower than 330/s when you call $mail->header.
+
+=end
+
+                   Rate Mail::Folder Mail::Box Mail::MboxParser grepmail
+Mail::Folder     23.2/s           --      -76%             -89%     -99%
+Mail::Box        97.1/s         318%        --             -53%     -95%
+MboxParser        206/s         786%      112%               --     -89%
+grepmail         1852/s        7878%     1807%             800%       --
+
+                   Rate Mail::Folder Mail::Box Mail::MboxParser grepmail
+Mail::Folder     23.2/s           --      -76%             -93%     -99%
+Mail::Box        97.2/s         318%        --             -71%     -95%
+Mail::MboxParser  330/s        1320%      240%               --     -82%
+grepmail         1852/s        7867%     1806%             461%       --
+
+grepmail is obviously the fastest of all (it is written in C using Inline). Mail::Folder performs worst, but that's because it uses temporary files and will probably need only a little memory. 
+
+Mail::Box by Mark Overmeer is closer to Mail::MboxParser with mailboxes that contain binary-attachements, I don't know why. More to that, it only eats about 50% the memory that Mail::MboxParser needs while still providing more features (at the same time being a little bit more complex in usage).
 
 =head1 BUGS
 

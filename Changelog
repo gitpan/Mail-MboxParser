@@ -1,4 +1,8 @@
-# $Id: Changelog,v 1.7 2001/07/28 07:49:57 parkerpine Exp $
+# $Id: Changelog,v 1.8 2001/07/29 10:21:50 parkerpine Exp $
+
+v0.07 (Sun Jul 29 11:37:43 CEST 2001)
+	+ as the MIME stuff, headers are now only parsed
+	  on demand (40% less memory, 25% quicker under normal conditions)
 
 v0.06 (Sat Jul 28 09:46:35 CEST 2001):
 	+ on-demand parsing of entities by using closures

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.14 2001/07/28 07:52:07 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.15 2001/07/29 10:22:26 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -15,21 +15,18 @@ use MIME::Parser;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.06";
+$VERSION    = "0.07";
 @EXPORT     = qw();
 $^W++;
 
 sub new {
-	my $call = shift;
-	my $class = ref($call) || $call;
-	my $self = {};
+	my $call  	= shift;
+	my $class 	= ref($call) || $call;
+	my $self  	= {};
 
 	my ($header, $body) = @_;
-	my %header = _split_header($header);
-
-	$self->{RAW}			= $header.$body;
 	$self->{HEADER} 		= $header;
-	$self->{HEADER_HASH}	= {%header};
+	$self->{HEADER_HASH}	= \&split_header;
 	$self->{BODY}			= $body;
 	$self->{MIME_PARSED}    = 0;
 	$self->{TOP_ENTITY}		= 0;
@@ -39,7 +36,8 @@ sub new {
 				my $p = new MIME::Parser;
 				$p->output_to_core(1);
 				$self->{MIME_PARSED} = 1;
-				$self->{TOP_ENTITY} = $p->parse_data($self->{RAW});
+				$self->{TOP_ENTITY} =
+					$p->parse_data($self->{HEADER}.$self->{BODY});
 			}
 			else { 	$self->{TOP_ENTITY} }
 		};
@@ -50,7 +48,7 @@ sub new {
 
 sub header {
 	my $self = shift;
-	return $self->{HEADER_HASH};
+	return $self->{HEADER_HASH}->(\$self->{HEADER});
 }
 
 sub body {
@@ -134,9 +132,9 @@ sub store_all_attachements {
 	}
 }
 
-sub _split_header {
+sub split_header {
 	my $header = shift;
-	my @header = split /\n/, $header;
+	my @header = split /\n/, $$header;
 	my ($key, $value);
 	my %header;
 	for (@header) {
@@ -146,7 +144,11 @@ sub _split_header {
 			$header{lc($key)} = $value;
 		}
 	}
-	return %header;
+	return {%header};
+}
+
+sub DESTROY {
+	undef (my $self = shift);
 }
 
 1;
