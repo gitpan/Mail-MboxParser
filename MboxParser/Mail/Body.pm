@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.13";
+$VERSION 	= "0.14";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -34,17 +34,34 @@ sub init(@) {
     $self->{CONTENT}	= $ent->body; 
     $self->{BOUNDARY}	= $bound;	     # the one in Content-type
     $self->{ARGS}	= $conf;
+
+    $self->{ARGS}->{decode} ||= 'NEVER';
+
+    $self->make_decoder($ent->head->mime_encoding) 
+	if $self->{ARGS}->{decode} =~ /BODY|ALL/;;
     $self;
 }
+
+sub make_decoder {
+    my ($self, $enc) = @_;
+    if ($enc eq 'base64') {
+	require MIME::Base64;
+	return $self->{DECODER} = sub { MIME::Base64::decode_base64(shift) };
+    } 
+    if ($enc eq 'quoted-printable') {
+	require MIME::QuotedPrint;
+	return $self->{DECODER} = sub { MIME::QuotedPrint::decode_qp(shift) };
+    }
+    $self->{DECODER} = sub { $_[0] };
+} 
 
 sub as_string {	
     my ($self, %args) = @_;
     $self->reset_last;
     return join "", $self->as_lines(strip_sig => 1) if $args{strip_sig};
-    my $decode = $self->{ARGS}->{decode} || 'NEVER';
+    my $decode = $self->{ARGS}->{decode};
     if ($decode eq 'BODY' || $decode eq 'ALL') {
-	use MIME::QuotedPrint;
-	return join "", map { decode_qp($_) } @{$self->{CONTENT}};
+	return join "", map { $self->{DECODER}->($_) } @{$self->{CONTENT}};
     }
     return join "", @{$self->{CONTENT}};
 }
@@ -53,10 +70,9 @@ sub as_string {
 sub as_lines() { 
     my ($self, %args) = @_;
     $self->reset_last;
-    my $decode = $self->{ARGS}->{decode} || 'NEVER';
+    my $decode = $self->{ARGS}->{decode};
     if ($decode eq 'BODY' || $decode eq 'ALL') {
-	use MIME::QuotedPrint; 
-	return map { decode_qp($_) } @{$self->{CONTENT}};
+	return map { $self->{DECODER}->($_) } @{$self->{CONTENT}};
     }
 
     return @{$self->{CONTENT}} if ! $args{strip_sig};
@@ -73,7 +89,7 @@ sub as_lines() {
 sub signature() {
     my $self = shift;
     $self->reset_last;
-    my $decode = $self->{ARGS}->{decode} || 'NEVER';
+    my $decode = $self->{ARGS}->{decode};
     my $bound = $self->{BOUNDARY};
 
     my @signature;
@@ -99,8 +115,7 @@ sub signature() {
 	
     $self->{LAST_ERR} = "No signature found" if !@signature;
     if ($decode eq 'BODY' || $decode eq 'ALL') {
-	use MIME::QuotedPrint;
-	map { $_ = decode_qp($_) } @signature;
+	$_ = $self->{DECODER}->($_) for @signature;
     }
     return @signature if $seperator;
     return ();
@@ -141,7 +156,7 @@ EOW
 
 sub quotes() {
     my $self = shift;
-    my $decode = $self->{ARGS}->{decode} || 'NEVER';
+    my $decode = $self->{ARGS}->{decode};
     $self->reset_last;
 
     my %ret;
@@ -152,8 +167,7 @@ sub quotes() {
     for (@{$self->{CONTENT}}) {
 
 	if ($decode eq 'ALL' || $decode eq 'BODY') {
-	    use MIME::QuotedPrint;
-	    $_ = decode_qp($_);
+	    $_ = $self->{DECODER}->($_);
 	}
         
 	# count quotation signs
@@ -235,7 +249,15 @@ string.
 
 =item B<as_lines ([strip_sig =E<gt> 1])>
 
-Sames as as_string() just that you get an array of lines.
+Sames as as_string() just that you get an array of lines with newlines attached
+to each line.
+
+B<NOTE:> When the body is actually some encoded binary data (most commonly such
+a body is base64-encoded), you can still use this method. Then you wont really
+get proper lines. Instead you get chunks of binary data that you should
+concatenate as in
+
+    my $binary = join "", $body->as_lines;
 
 If 'strip_sig' is set to a true value, the signature is stripped from the
 string.
@@ -286,7 +308,7 @@ in the array of $quotes->{0}.
 So below is a little code-snippet that should, in most cases, restore the first
 5 paragraphs (containing quote-level 0 and 1) of an email:
 
-	for (0 .. 5) {
+	for (0 .. 4) {
 		print $quotes->{0}->[$_];
 		print $quotes->{1}->[$_];
 	}
@@ -304,7 +326,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.51.
+This is version 0.52.
 
 =head1 AUTHOR AND COPYRIGHT
 

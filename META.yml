@@ -1,11 +1,12 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         Mail-MboxParser
-version:      0.51
+version:      0.52
 version_from: MboxParser.pm
 installdirs:  site
 requires:
     File::Temp:                    0
+    MIME::Base64:                  0
     MIME::QuotedPrint:             0
     MIME::Tools:                   5
 

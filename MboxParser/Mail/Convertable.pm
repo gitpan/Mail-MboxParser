@@ -120,7 +120,7 @@ For more details, see L<Mail::Mailer>
 
 =head1 VERSION
 
-This is version 0.50.
+This is version 0.52.
 
 =head1 AUTHOR AND COPYRIGHT
 

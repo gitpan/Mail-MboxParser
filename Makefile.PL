@@ -35,6 +35,7 @@ WriteMakefile(
     VERSION_FROM => 'MboxParser.pm', 
     PREREQ_PM    => { MIME::Tools               => 5.0,
                       MIME::QuotedPrint         => 0, 
+		      MIME::Base64		=> 0,
 		      File::Temp		=> 0,
                     },
     DISTNAME     => 'Mail-MboxParser',

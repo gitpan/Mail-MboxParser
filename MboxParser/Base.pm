@@ -53,7 +53,7 @@ Nothing to describe nor to document here. Read L<Mail::MboxParser> on how to use
 
 =head1 VERSION
 
-This is version 0.51.
+This is version 0.52.
 
 =head1 AUTHOR AND COPYRIGHT
 
