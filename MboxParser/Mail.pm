@@ -4,20 +4,21 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.25 2001/08/24 14:04:04 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.27 2001/08/27 06:33:22 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
 require 5.004;
 
 use Mail::MboxParser::SpamDetector;
+use Mail::MboxParser::Mail::Body;
 use MIME::Parser;
 use Carp;
 
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
-$VERSION    = "0.14";
+$VERSION    = "0.15";
 @EXPORT     = qw();
 @ISA		= qw(Mail::MboxParser::Base);
 $^W++;
@@ -44,12 +45,52 @@ sub header() {
 	return $self->{HEADER_HASH}->($self->{HEADER});
 }
 
-sub body() { 
-	my $self = shift;
+sub body(;$) { 
+	my ($self, $num) = @_;
 	$self->reset_last;
-	return Mail::MboxParser::Mail::Body->new($self->{BODY});	
+
+	if (defined $num && $num >= $self->num_entities) {
+		$self->{LAST_ERR} = "No such body";
+		return;
+	}
+
+	# body needs the "Content-type: ... boundary=" stuff
+	# in order to decide which lines are part of signature and
+	# which lines are not (ie denote a MIME-part)
+	my $bound; 
+	
+	# particular entity desired?
+	# we need to read the header of this entity then :-(
+	if (defined $num) {		
+		my $ent = $self->get_entities($num);
+		if ($bound = $ent->head->get('content-type')) {
+			$bound =~ /boundary="(.*)"/; $bound = $1;
+		}
+		return Mail::MboxParser::Mail::Body->new($ent, $bound);
+	}
+	
+	# else
+	if ($bound = $self->header->{'content-type'}) { 
+		$bound =~ /boundary="(.*)"/; $bound = $1;
+	}	
+	return ref $self->{TOP_ENTITY} eq 'MIME::Entity' 
+		?	Mail::MboxParser::Mail::Body->new($self->{TOP_ENTITY}, $bound)
+		:	Mail::MboxParser::Mail::Body->new($self->get_entities(0), $bound);
 }
 
+sub find_body() {
+	my $self = shift;
+	$self->{LAST_ERR} = "Could not find a suitable body at all";
+	my $num = -1;
+	for my $part ($self->parts_DFS) {
+		$num++;
+		if ($part->effective_type eq 'text/plain') {
+			$self->reset_last; last;
+		}
+	}
+	return $num;
+}
+	
 sub from() {
 	my $self = shift;
 	$self->reset_last;
@@ -88,21 +129,27 @@ sub num_entities() {
 }
 
 sub get_entities(@) {
-	my $self = shift;
+	my ($self, $num) = @_;
 	$self->reset_last;
+	
+	if (defined $num && $num >= $self->num_entities) {
+		$self->{LAST_ERR} = "No such entity"; 
+		return;
+	}
+	
 	if (ref $self->{TOP_ENTITY} ne 'MIME::Entity') {
 		$self->{TOP_ENTITY} = 
 			$Parser->parse_data($self->{HEADER}.$self->{BODY});
 	}
-	my @parts = eval { $self->{TOP_ENTITY}->parts(@_); };
+	
+	my @parts = eval { $self->{TOP_ENTITY}->parts_DFS; };
 	$self->{LAST_LOG} = $@ if $@;
-
-	return wantarray ? @parts : $parts[0];
+	return wantarray ? @parts : $parts[$num];
 }
 
 # just overriding MIME::Entity::parts() 
 # to work around its strange behaviour
-sub parts(;$) { shift->get_entities(@_) }
+sub parts(@) { shift->get_entities(@_) }
 
 sub get_entity_body($) {
 	my $self = shift;
@@ -331,7 +378,8 @@ However, go on reading if you want to use methods from MIME::Entity and learn ab
 
 =head1 EXTERNAL METHODS
 
-Since one of Mail::MboxParser::Mail's baseclasses is MIME::Entity, you can invoke most of its methods on Mail::MboxParser::Mail-objects. Example:
+Mail::MboxParser::Mail implements an autoloader that will do the appropriate type-casts for you if you invoke methods from external modules. This, however, currently only works with MIME::Entity. Support for other modules will follow.
+Example:
 
 	my $mb = Mail::MboxParser->new("/home/user/Mail/received");
 	for my $msg ($mb->get_messages) {

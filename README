@@ -1,4 +1,4 @@
-$Id: README,v 1.5 2001/08/24 09:30:31 parkerpine Exp $
+$Id: README,v 1.6 2001/08/26 13:08:15 parkerpine Exp $
 
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient which has not been intended anyway.
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ access to header fields, body and MIME-parts. It is for those people who find the above two module-sets too confusing. See the list of provided methods below.
@@ -18,31 +18,32 @@ Then install:
 	make test
 	make install
 
-OO:
----
-As from v0.12, Mail::MboxParser can be called 'slightly' object-oriented. 
-Mail::MboxParser extends Mail::MboxParser::Base while Mail::MboxParser::Mail 
-extends Mail::MboxParser::Base and MIME::Entity. In practice this means that 
-you can try to invoke methods from MIME::Entity directly on 
-Mail::MboxParser::Mail-objects. I haven't yet tested this thoroughly enough. 
-However, the below example should work:
+Autoloader:
+-----------
+Read the Mail::MboxParser::Mail docs for invoking external methods.
+The autoloading-mechanism will take care that the below and other things
+will work:
 
-	$mail->effective_type
-
-Some others as well.
+	$mail->effective_type; # from MIME::Entity
 
 Methods:
 --------
+
+Mail::MboxParser::Base (not to be instantiated)
+	::error (error of last operation if any)
+	::log (logs internal errors in rare cases)
+	
 Mail::MboxParser
 	::new (of course)
 	::open
 	::get_messages (all on array)
 	::nmsgs (no of messages in mailbox)
 	
-Mail::MboxParser::Mail::
+Mail::MboxParser::Mail
 	::new (usually internally called by Mail::MboxParser::get_messages)
 	::header (hash-ref with all header-fields)
-	::body
+	::body (Mail::MboxParser::Mail::Body object)
+	::find_body (index number that should be the main-body of email)
 	::from (hash-ref)
 	::to (array of hash-refs)
 	::id
@@ -52,6 +53,11 @@ Mail::MboxParser::Mail::
 	::store_attachement 
 	::store_all_attachements (just save all saveable attachements to filehandle)
 
+Mail::MboxParser::Mail::Body
+	::new (done internally)
+	::signature (signature of the body if any)
+	::extract_urls (hash-ref with url and context)
+	
 Have a look into the eg-directory of the package for some (or one) example(s).
 isspam is a little script that reads one mailbox and performs some tests on them. It spits out a number indicating whether this is spam or not. The higher it is, the more likely. Call it like 'isspam -all /home/user/mailbox'.
 

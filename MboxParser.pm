@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.26 2001/08/24 14:04:04 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.28 2001/08/27 06:33:22 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -18,7 +18,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.14";
+$VERSION	= "0.15";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -175,10 +175,20 @@ This is usually not called directly but instead by $mb->get_messages. You could 
 
 Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so $header{Subject} has to be written as $header{subject}.
 
-=item B<body>
+=item B<body[(n)]>
 
-Returns the body as a single string. Currently, the body will be 'as is'. That means, no decoding takes place.
+Returns a Mail::MboxParser::Mail::Body object. For methods upon that see further below. When called with the argument n, the n-th body of the message is retrieved. That is, the body of the n-th entity.
 
+Sets $message->error if something went wrong.
+
+=item B<find_body>
+
+This will return an index number that represents what Mail::MboxParser considers to be the actual (main)-body of an email. This is useful if you don't know about the structure of a message but want to retrieve the message's signature for instance:
+
+	$signature = $msg->body($msg->find_body)->signature;
+
+Changes are good that find_body does what it is supposed to do.
+	
 =item B<from>
 
 Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty. The name-field does not necessarily contain a value either. Example:
@@ -265,6 +275,22 @@ $mail->error will tell you poassible failures and a possible explanation for tha
 Sorry, no documentation on that yet before this is properly implemented. You can, however, try to find out yourself. ;-)
 
 =back
+
+Methods that apply to Mail::MboxParser::Mail-objects come here:
+
+=over 4
+
+=item B<signature>
+
+Returns the signature of a message as an array of lines. Trailing newlines are already removed.
+
+=item B<extract_urls [(unique => 0|1)]>
+
+Returns an array of hash-refs. Each hash-ref has two fields: 'url' and 'context' where context is the line in which the 'url' appeared.
+
+When calling it like $mail->extract_urls(unique => 1), duplicate URLs will be filtered out regardless of the 'context'. That's useful if you just want a list of all URLs that can be found in your mails.
+
+=cut
 
 Common methods for both mailbox- and mail-objects come below. These are about error-handling so you should read the section ERROR-HANDLING as well.
 

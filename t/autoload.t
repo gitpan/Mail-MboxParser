@@ -17,8 +17,8 @@ my $msg = $a[7];
 
 ok(defined $mb);
 ok($msg->effective_type eq 'multipart/mixed');
-ok($msg->num_entities == 2);
+ok($msg->num_entities == 3);
 ok($msg->parts_DFS == 2);
-ok($msg->parts(0)->make_singlepart eq 'ALREADY');
+ok($msg->parts(1)->make_singlepart eq 'ALREADY');
 
 
