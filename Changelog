@@ -1,8 +1,14 @@
-# $Id: Changelog,v 1.24 2001/11/26 11:13:36 parkerpine Exp $
+# $Id: Changelog,v 1.25 2001/11/28 13:54:13 parkerpine Exp $
+
+v0.24 (Wed Nov 28 14:48:05 CET 2001)
+    + mailboxes with DOSish line-endings (\015\012)
+      can now also be parsed
+      (reported by Bill Moseley <moseley@hank.org>)
 
 v0.23 (Mon Nov 26 12:07:41 CET 2001)
-    + bugfix in MboxParser.pm:
-      last line of message sometimes ommited
+    + bugfix in MboxParser.pm, last line of message sometimes 
+      ommited
+      (reported by Christian Wendt <christian.wendt@is-energy.de>)
     + decoding of qp-encoded filenames for
       store_(all_)attachement(s)
 
@@ -90,34 +96,34 @@ v0.08 (Wed Aug  1 09:58:18 CEST 2001):
 	+ updated PODs
 
 v0.07 (Sun Jul 29 11:37:43 CEST 2001):
-	+ as the MIME stuff, headers are now only parsed
-	  on demand (40% less memory, 25% quicker under normal conditions)
+    + as the MIME stuff, headers are now only parsed
+      on demand (40% less memory, 25% quicker under normal conditions)
 
 v0.06 (Sat Jul 28 09:46:35 CEST 2001):
-	+ on-demand parsing of entities by using closures
-	  -> performance-gain of at least 900%
-	+ rewinding of mailbox-filehandle, 
-	  so a second call to get_messages will work
+    + on-demand parsing of entities by using closures
+      -> performance-gain of at least 900%
+    + rewinding of mailbox-filehandle, 
+      so a second call to get_messages will work
 
 v0.05 (Fri Jul 27 20:28:04 CEST 2001):
-	+ rework of the pattern-matching,
-	  should now be minimally quicker
-	+ nmsgs now compliant to RFC 822
-	+ added little script isspam (undocumented)
-	+ this time the correct $VERSION !!
+    + rework of the pattern-matching,
+      should now be minimally quicker
+    + nmsgs now compliant to RFC 822
+    + added little script isspam (undocumented)
+    + this time the correct $VERSION !!
 
 v0.04 (Mon Jul 23 17:52:29 CEST 2001):
-	+ fixed wrong parsing of header lines if line contains a colon
-	+ increased reliability of get_entity_body
+    + fixed wrong parsing of header lines if line contains a colon
+    + increased reliability of get_entity_body
 
 v0.03 (Thu Jul 19 15:09:18 CEST 2001):
-	+ $mail->{HEADER} returning a string broke everything, fixed
-	+ added tests on install
+    + $mail->{HEADER} returning a string broke everything, fixed
+    + added tests on install
 
 v0.02 (Fri Jul  6 08:04:34 CEST 2001):
-	+ $mail->{HEADER} now returns a string
-	+ eg-directory included in the package
-	+ now works on Perl >= 5.004
+    + $mail->{HEADER} now returns a string
+    + eg-directory included in the package
+    + now works on Perl >= 5.004
 
 v0.01 (Thu Jul  5 08:19:40 CEST 2001):
-	+ upload to CPAN
+    + upload to CPAN

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.36 2001/11/26 11:13:37 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.37 2001/11/28 13:55:28 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -18,7 +18,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
-$VERSION    = "0.21";
+$VERSION    = "0.22";
 @EXPORT     = qw();
 @ISA		= qw(Mail::MboxParser::Base);
 $^W++;
@@ -110,7 +110,7 @@ sub get_field($) {
     my ($self, $fieldname) = @_;
     $self->reset_last;
 
-    my @headerlines = split /\n/, $self->{HEADER};
+    my @headerlines = split /\015?\012/, $self->{HEADER};
     my ($ret, $inretfield);
     foreach my $bit (@headerlines) {
         if ($bit =~ /^\s/) { if ($inretfield) { $ret .= $bit."\n"; } }
@@ -357,7 +357,7 @@ sub _recipients($) {
 # patch provided by Kenn Frankel
 sub split_header {
 	my ($header, $decode) = @_;
-	my @headerlines = split /\n/, $header;
+	my @headerlines = split /\015?\012/, $header;
 	my @header;
  	foreach my $bit (@headerlines) {
 		if ($bit =~ /^\s/) 	{ $header[-1] .= $bit; }

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.38 2001/11/26 11:34:42 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.39 2001/11/28 13:56:11 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -19,7 +19,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.23";
+$VERSION	= "0.24";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -90,8 +90,8 @@ sub get_messages() {
 	my $h = $self->{READER};
 
 	my $got_header;
-	my $from_date  = qr(^From (.*)\d{4}\n$);
-	my $empty_line = qr(^\n$);
+	my $from_date  = qr/^From (.*)\d{4}\015?$/;
+	my $empty_line = qr/^\015?$/;
 
 	my @messages;
 
@@ -142,7 +142,7 @@ sub nmsgs() {
 	if (not $self->{READER}) { return "No mbox opened" }
 	if (not $self->{NMSGS}) {
 		$h = $self->{READER};
-		my $from_date = qr(^From (.*)\d{4}\n$);
+		my $from_date = qr/^From (.*)\d{4}\015?$/;
 		while (<$h>) {
 			$self->{NMSGS}++ if /$from_date/;
 		}
@@ -183,14 +183,6 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
 This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
 
 Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
-
-B<IMPORTANT CHANGES:> 
-
-If you had been using a previous release of Mail::MboxParser, pay special attention to the changes in the interface. It now should be 'future-proof' since named parameters have been introduced. This makes Mail::MboxParser easily extensible without breaking any scripts depending on this module.
-
-More to that, the rather unlucky SpamDetector class has been wiped out and so the call to is_spam(). There has lately been a release of Mail::SpamAssassin to CPAN. It acts as a plug-in to Mail::Audit and can't yet be used for Mail::MboxParser. This is something for the Convertable-class and on my to-do list.
-
-Mail::MboxParser::Mail::Convertable has been newly introduced. As for yet, it offers only a rudimentary functionality. See the perldocs of this module for details.
 
 =head1 METHODS
 
