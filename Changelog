@@ -1,27 +1,39 @@
-# $Id: Changelog,v 1.12 2001/08/13 15:57:00 parkerpine Exp $
+# $Id: Changelog,v 1.13 2001/08/17 07:52:19 parkerpine Exp $
 
-v0.11 (Mon Aug 13 17:52:22 CEST 2001)
+v0.12 (Fri Aug 17 08:35:15 CEST 2001):
+	+ new base-class Mail::MboxParser::Base
+	+ new methods $obj->error, $obj->log
+	+ Mail::MboxParser::Mail now extends MIME::Entity so
+	  $mail->effective_type and stuff should work
+	+ eventually using carp/croak instead of warn/die
+	+ removed a very unpleasant memory-leak which did not allow
+	  for a proper destruction of Mail::MboxParser objects,
+	  happened when doing something like:
+	  @mbs = map { Mail::MboxParser->new($_) } @mboxes;
+	  undef $mbs[0]; # etc...
+
+v0.11 (Mon Aug 13 17:52:22 CEST 2001):
 	+ new arguments for store_attachement and store_all_attachements
 	  so that filenames for saving can be dynamically assigned
 	  (suggestion by Angeline Koh <abuu@home.com>)
 	+ Mail::Box::SpamDetector class included but not yet properly working,
 	  hence not documented either
 
-v0.10 (Sun Aug  5 12:24:56 CEST 2001)
+v0.10 (Sun Aug  5 12:24:56 CEST 2001):
 	+ new method Mail::MboxParser::Mail->to
 	+ additional tests for the above
 
-v0.09 (Sat Aug  4 13:58:47 CEST 2001)
+v0.09 (Sat Aug  4 13:58:47 CEST 2001):
 	+ multi-line header-fields are now correctly reckognized
 	  (Kenn Frankel <kfrankel@maxstr.com>)
 
-v0.08 (Wed Aug  1 09:58:18 CEST 2001)
+v0.08 (Wed Aug  1 09:58:18 CEST 2001):
 	+ $self->{ENTITY} now destroys itself once called,
 	  reduces mem-usage when MIME is processed
 	+ new test-suits
 	+ updated PODs
 
-v0.07 (Sun Jul 29 11:37:43 CEST 2001)
+v0.07 (Sun Jul 29 11:37:43 CEST 2001):
 	+ as the MIME stuff, headers are now only parsed
 	  on demand (40% less memory, 25% quicker under normal conditions)
 

@@ -4,50 +4,41 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.22 2001/08/13 16:19:31 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.23 2001/08/17 07:51:04 parkerpine Exp $
 
 package Mail::MboxParser;
 
 require 5.004;
 
-use Mail::MboxParser::Mail;
+use base 'Mail::MboxParser::Base';
 
+use Mail::MboxParser::Mail;
 use strict;
+use Carp;
+
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT);
-$VERSION	= "0.11";
+use vars qw($VERSION @EXPORT @ISA);
+$VERSION	= "0.12";
 @EXPORT		= qw();
+@ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
 
-sub new {
-	my $call = shift;
-	my $class = ref($call) || $call;
-	my $self = {};
+sub init (;$) {
+	my ($self, $file) = @_;
 	
-	$self->{READER} = undef;
-	$self->{NMSGS}	= undef;
-	
-	my $file;
-	
-	if (($file = shift)) { 
-		open MBOX, "<$file" 
-			or die "Error: Could not open $file for reading: $!";			
-		$self->{READER} 	= \*MBOX; 
-	}
-	bless ($self, $class);
-	return $self;
+	if ($file) { $self->open($$file[0]) }
+
+	$self;
 }
 
-sub open {
-	my $self = shift;
-	die "Error: Mail::MboxParser::open requires an argument\n" if @_ == 0;
-	my $file = shift;
+sub open ($) {
+	my ($self, $file) = @_;
 	open MBOX, "<$file"
-		or die "Error: Could not open $file for reading: $!";
+		or croak "Error: Could not open $file for reading: $!";
 	$self->{READER} = \*MBOX;
 }
 
-sub get_messages {
+sub get_messages() {
 	my $self = shift;
 	my ($in_header, $in_body) = (0, 0);
 	my ($header, $body);
@@ -94,7 +85,7 @@ sub get_messages {
 	return @messages;
 }
 		
-sub nmsgs {
+sub nmsgs() {
 	my $self = shift;
 	my $h;
 	if (not $self->{READER}) { return "No mbox opened" }
@@ -140,7 +131,11 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
 
 This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
 
+Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
+
 =head1 METHODS
+
+See also the section ERROR-HANDLING much further below.
 
 The below methods refer to Mail::MboxParser-objects.
 
@@ -186,7 +181,9 @@ Returns the body as a single string.
 
 =item from
 
-Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty.
+Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty. The name-field does not necessarily contain a value either. Example:
+	
+	print $mail->from->{email};
 
 =item to
 
@@ -203,15 +200,17 @@ Returns the message-id of a message cutting off the leading and trailing '<' and
 
 =item num_entitities
 
-Returns the number of MIME-entities. That is, the number of sub-entitities actually. 
+Returns the number of MIME-entities. That is, the number of sub-entitities actually. If 0 is returned and you think this is wrong, check $mail->log.
 
 =item get_entitities([n])
 
-Either returns an array of all MIME::Entity objects or one particular if called with a number.
+Either returns an array of all MIME::Entity objects or one particular if called with a number. If no entity whatsoever could be found, an empty list is returned.
+
+$mail->log instantly called after get_entities will give you some information of what internally may have failed. If set, this will be an error raised by MIME::Entity but you don't need to worry about it at all. It's just for the record.
 
 =item get_entity_body(n)
 
-Returns the body of the n-th MIME::Entity as a single string.
+Returns the body of the n-th MIME::Entity as a single string, undef otherwise in which case you could check $mail->error.
 
 =item store_entity_body(n, FILEHANDLE)
 
@@ -224,9 +223,12 @@ and could be shortened to this:
 
  $mail->store_entity_body(0, \*FILEHANDLE);
 
+It returns a true value on success and undef on failure. In this case, examine the value of $mail->error since the entity you specified with 'n' might not exist.
+
 =item store_attachement(n, path, [coderef [,args]])
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
+
 It uses the recommended-filename found in the MIME-header unless a 'coderef' has been given. The coderef is a reference to a subroutine whose first argument will always be the Mail::MboxParser::Mail object and  whose second argument is the index of the current MIME-entity that is processed. The return value is used as the filename under which the attachement is to be saved. Any additional arguments that you want to pass to the coderef can be added as list behind 'coderef'. 'path' is the place where the new file will go to. Example:
 
 	my $coderef = 
@@ -235,11 +237,14 @@ It uses the recommended-filename found in the MIME-header unless a 'coderef' has
 			return $msg->id."_$n";
 		};
 	my @additional = qw(Foo Bar);
- 	$msg->store_attachement(1, "/home/ethan/", $coderef, @additional);
+ 	$msg->store_attachement(1,       "/home/ethan/", 
+	                        $coderef, @additional);
 
 This will save the attachement found in the second entity under the name that consists of the message-ID and the appendix "_1" since the above code works on the second entity (that is, with index = 1). @additional isn't used in this example but should demonstrate how to pass additional arguments.
 
-Returns undef if entity did not contain a saveable attachement, the filename otherwise.
+If 'path' does not exist, it will try to create the directory for you.
+
+Returns the filename under which the attachement has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
 
 =item store_all_attachements(path, [coderef [,args]])
 
@@ -247,13 +252,29 @@ Walks through an entire mail and stores all apparent attachements to 'path'. See
 
 As for 'coderef', read store_attachement.
 
-Returns a list of files that has been succesfully saved.
+Returns a list of files that has been succesfully saved and an empty list if no attachement could be extracted.
+
+$mail->error will tell you poassible failures and a possible explanation for that.
 
 =item is_spam
 
 Sorry, no documentation on that yet before this is properly implemented. You can, however, try to find out yourself. ;-)
 
 =back
+
+Shared methods for both mailbox- and mail-objects come below. These are about error-handling so you should read the section ERROR-HANDLING as well.
+
+=over 4
+
+=item error
+
+Call this immediately after one of the methods above that mention a possible error-message. Once called, the buffer for the error-message is cleared since only the _last_ error is stored.
+
+=item log
+
+Sort of internal weirdnesses are recorded here. Again only the last event is saved and erased after you called this method.
+
+=back 
 
 =head1 FIELDS
 
@@ -293,6 +314,56 @@ This field is undefined until one of the MIME-methods (num_entities, get_entitie
 
 =back
 
+=head1 ERROR-HANDLING
+
+Mail::MboxParser provides a mechanism for you to figure out why some methods did not function as you expected. There are four classes of unexpected behavior:
+
+=over 4
+
+=item (1) bad arguments 
+
+In this case you called a method with arguments that did not make sense, hence you confused Mail::MboxParser. Example:
+
+  $mail->store_entity_body;           # wrong, needs two arguments
+  $mail->store_entity_body(0);        # wrong, still needs one more
+
+In any of the above two cases, you'll get an error message and your script will exit. The message will, however, tell you in which line of your script this error occured.
+
+=item (2) correct arguments but...
+
+Consider this line:
+
+  $mail->store_entity_body(50, \*FH); # could be wrong
+
+Obviously you did call store_entity_body with the correct number of arguments. That's good because now your script wont just exit. Unfortunately, your program can't know in advance whether the particular mail ($mail) has a 51st entity.
+
+So, what to do?
+
+Just be brave: Write the above line and do the error-checking afterwards by calling $mail->error immediately after store_entity_body:
+
+	$mail->store_entity_body(50, *\FH);
+	if ($mail->error) {
+		print "Oups, something wrong:", $mail->error;
+	}
+
+In the description of the available methods above, you always find a remark when you could use $mail->error. It always returns a string that you can print out and investigate any further.
+	
+=item (3) errors, that never get visible
+
+Well, they exist. When you handle MIME-stuff a lot such as attachements etc., Mail::MboxParser internally calls a lot of methods provided by the MIME::Tools package. These work splendidly in most cases, but the MIME::Tools may fail to produce something sensible if you have a very queer or even screwed up mailbox.
+
+If this happens you might find information on that when calling $mail->log. This will give you the more or less unfiltered error-messages produced by MIME::Tools.
+
+My advice: Ignore them! If there really is something in $mail->log it is either because you're mails are totally weird (there is nothing you can do about that then) or these errors are smoothly catched inside Mail::MboxParser in which case all should be fine for you.
+
+=item (4) the apocalyps
+
+If nothing seems to work the way it should and $mail->error is empty, then the worst case has set in: Mail::MboxParser has a bug.
+
+Needless to say that there is any way to get around of this. In this case you should contact and I'll examine that.
+
+=back
+
 =head1 CAVEATS
 
 I have been working hard on making Mail::MboxParser eat less memory and as quick as possible. Due to that, two time and memory consuming matters are now called on demand. That is, parsing out the MIME-parts and turning the raw header into a hash have become closures.
@@ -329,9 +400,13 @@ Mail::Box by Mark Overmeer is closer to Mail::MboxParser with mailboxes that con
 
 =head1 BUGS
 
-Don't know yet of any. However, since I only have a limited number of mailboxes on which I could test the module, there might be circumstances under which Mail::MboxParser fails to work correctly. It might fail on mal-formated mails produced by some cheap CGI-webmailers. 
+Due to the different ways that mailers format to-lines with multiple recipients, $mail->to will not always cleanly split by each recipient so that on same occasions to() just returns a list with one element that contains the whole string behind "To: ". As for yet, you have to process this long string by yourself.
 
 The way of counting the messages and detecting them now complies to RFC 822. This is, however, no guarentee that it all works seamlessly. There are just so many mailboxes that get screwed up by mal-formated mails.
+
+=head1 SEE ALSO
+
+L<MIME::Entity>
 
 =head1 THANKS
 
@@ -345,3 +420,4 @@ Copyright (c)  2001 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
+=cut

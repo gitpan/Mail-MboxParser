@@ -18,6 +18,19 @@ Then install:
 	make test
 	make install
 
+OO:
+---
+As from v0.12, Mail::MboxParser can be called 'slightly' object-oriented. 
+Mail::MboxParser extends Mail::MboxParser::Base while Mail::MboxParser::Mail 
+extends Mail::MboxParser::Base and MIME::Entity. In practice this means that 
+you can try to invoke methods from MIME::Entity directly on 
+Mail::MboxParser::Mail-objects. I haven't yet tested this thoroughly enough. 
+However, the below example should work:
+
+	$mail->effective_type
+
+Some others as well.
+
 Methods:
 --------
 Mail::MboxParser
@@ -31,6 +44,7 @@ Mail::MboxParser::Mail::
 	::header (hash-ref with all header-fields)
 	::body
 	::from (hash-ref)
+	::to (array of hash-refs)
 	::id
 	::num_entities (no of MIME-entities)
 	::get_entities (array or scalar if called with a number)
