@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Body.pm,v 1.9 2001/09/09 09:03:59 parkerpine Exp $
+# Version: $Id: Body.pm,v 1.10 2001/11/26 11:13:37 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Body;
 
@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.04";
+$VERSION 	= "0.05";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 $^W++;
@@ -217,7 +217,7 @@ Since emails can have multiple MIME-parts and each of these parts has a body it 
 
 =item B<as_string>
 
-Returns the textual representation of the body as one string. Decoding takes place when the mailbox has been opened using the decode => 'HEADER' | 'ALL' option.
+Returns the textual representation of the body as one string. Decoding takes place when the mailbox has been opened using the decode => 'BODY' | 'ALL' option.
 
 =item B<as_lines>
 

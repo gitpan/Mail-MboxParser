@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.34 2001/09/20 11:26:46 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.36 2001/11/26 11:13:37 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -18,7 +18,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
-$VERSION    = "0.19";
+$VERSION    = "0.21";
 @EXPORT     = qw();
 @ISA		= qw(Mail::MboxParser::Base);
 $^W++;
@@ -238,8 +238,27 @@ EOW
 			$self->get_entities($num)->head->recommended_filename; };
 		$self->{LAST_LOG} = $@;
 		if (not $file) {
-			$self->{LAST_ERR} = "No attachement in entity $num";
-			return;
+            # test for Content-Disposition
+            if (! $self->get_entities($num)->head->get('content-disposition')) {
+                $self->{LAST_ERR} = "No attachement in entity $num";
+			    return;
+            }
+            else {
+                my ($type, $filename) = split /;\s+/, 
+                    $self->get_entities($num)->head->get('content-disposition');
+                if ($type ne 'attachment') {
+                    $self->{LAST_ERR} = "No attachement in entity $num";
+                    return;
+                }
+                else {
+                    $filename =~ /filename.?=.*?''(.*)$/;
+                    ($file = $1) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+                    if (! $file) {
+                        $self->{LAST_ERR} = "No attachement in entity $num";
+                        return;
+                    }
+                }
+            }
 		}
 		
 		if (-e $path && not -d $path) {
@@ -257,6 +276,12 @@ EOW
 		if (defined $args{code}) { $file = $args{code}->($self, 
                                                         $num, 
                                                         @{$args{args}}) }
+                                                        
+        if ($file =~ /^=\?/) { # decode qp if possible
+            eval { require MIME::Words; };
+            $file = MIME::Words::decode_mimewords($file) if ! $@;
+        }
+                                                        
 		if (open ATT, ">$path/$file") {
 			$self->store_entity_body($num, handle => \*ATT);
 			close ATT ;

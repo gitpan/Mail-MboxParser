@@ -1,4 +1,10 @@
-# $Id: Changelog,v 1.23 2001/09/20 11:25:23 parkerpine Exp $
+# $Id: Changelog,v 1.24 2001/11/26 11:13:36 parkerpine Exp $
+
+v0.23 (Mon Nov 26 12:07:41 CET 2001)
+    + bugfix in MboxParser.pm:
+      last line of message sometimes ommited
+    + decoding of qp-encoded filenames for
+      store_(all_)attachement(s)
 
 v0.22 (Tue Sep 20 13:23:38 CEST 2001)
     + new get_field method that returns a raw headerfield,

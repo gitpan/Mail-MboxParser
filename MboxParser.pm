@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.36 2001/09/20 11:26:25 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.38 2001/11/26 11:34:42 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -19,7 +19,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.22";
+$VERSION	= "0.23";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -99,19 +99,20 @@ sub get_messages() {
 	while (<$h>) {
 		
 		# entering header
-		if (not $in_body and /$from_date/) {
+        if (!$in_body && /$from_date/) {
 			($in_header, $in_body) = (1, 0);
 			$got_header = 0;
 		}
 		# entering body
-		if ($in_header and /$empty_line/) { 
+        if ($in_header && /$empty_line/) { 
 			($in_header, $in_body) = (0, 1);
 			$got_header = 1; 
 		}
 		
 		# just before entering next mail-header or running
 		# out of data, store message in Mail-object
-		if ((/$from_date/ or eof) and $got_header) {
+        if ((/$from_date/ || eof) && $got_header) {
+            push @body, $_ if eof; # don't forget last line!!
 			$header = join '', @header;
 			$body 	= join '', @body;
 			my $m = Mail::MboxParser::Mail->new($header, 
@@ -120,12 +121,12 @@ sub get_messages() {
 			push @messages, $m;
 			($in_header, $in_body) = (1, 0);
 			($header, $body) = (undef, undef);
-			undef @header; undef @body;
+			(@header, @body) = ();
 			$got_header = 0;
 		}
 		if ($_) {
-			push @header, $_ if $in_header and not $got_header; 
-			push @body, $_ if $in_body and $got_header;
+            push @header, $_ if $in_header && !$got_header; 
+            push @body, $_   if $in_body   &&  $got_header;
 		}		
 	};
 	
