@@ -36,7 +36,7 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
     # slurping
     for my $msg ($mb->get_messages) {
         print $msg->header->{subject}, "\n";
-        $msg->store_all_attachments('/tmp');
+        $msg->store_all_attachments(path => '/tmp');
     }
 
     # iterating
@@ -73,14 +73,14 @@ More to that, see the relevant manpages of Mail::MboxParser::Mail, Mail::MboxPar
 
 use strict;
 use Mail::MboxParser::Mail;
-use File::Temp;
+use File::Temp qw/tempfile/;
 use Symbol;
 use Carp;
 use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.40";
+$VERSION	= "0.41";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -835,7 +835,7 @@ David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing i
 
 =head1 VERSION
 
-This is version 0.40.
+This is version 0.41.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -1,3 +1,12 @@
+v0.41 (Thu Sep  4 09:52:04 CEST 2003)
+
+    + forgot to import tempfile() from File::Temp:
+      this resulted in an
+      "Undefined subroutine &Mail::MboxParser::tempfile
+      called at..."
+    + wrong SYNOPSIS: store_all_attachments() receives key/value 
+      pairs as arguments
+
 v0.40 (Tue Aug 19 09:14:08 CEST 2003)
 
     + next_message() and get_message() dropped last
