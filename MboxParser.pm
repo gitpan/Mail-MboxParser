@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.35 2001/09/09 09:01:49 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.36 2001/09/20 11:26:25 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -19,7 +19,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.21";
+$VERSION	= "0.22";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -370,9 +370,15 @@ Much more needs to be done here. Body cannot be modified yet, furthermore interf
 
 Clean-up of the test-scripts is desperately needed. Now they represent rather an arbitrary selection of tested functions. Some are tested several times while others don't show up at all in the suits.
 
+=item Misspellings
+
+I've been told that - confusingly for any native English-speaker - I misspelled 'attachment'. This is annoying in method-names and a source of confusion and mistakes. Will soon be fixed as I find the time to do the necessary changes inside the modules, docs and test-scripts.
+
 =head1 THANKS
 
-Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Kenn Frankel and Mark Overmeer for his hints on more object-orientedness.
+Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Mark Overmeer for his hints on more object-orientedness.
+
+Kenn Frankel (kenn@kenn.cc) kindly patched the broken split-header routine and added get_field().
 
 =head1 AUTHOR AND COPYRIGHT
 

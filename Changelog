@@ -1,4 +1,9 @@
-# $Id: Changelog,v 1.22 2001/09/09 08:56:54 parkerpine Exp $
+# $Id: Changelog,v 1.23 2001/09/20 11:25:23 parkerpine Exp $
+
+v0.22 (Tue Sep 20 13:23:38 CEST 2001)
+    + new get_field method that returns a raw headerfield,
+      so that even the "Received"-line is no longer lost
+      (Kenn Frankel <kfrankel@maxstr.com>)
 
 v0.21 (Sun Sep 9 10:37:46 CEST 2001)
     + decoding is now pretty complete 

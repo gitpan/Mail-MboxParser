@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.33 2001/09/09 09:02:43 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.34 2001/09/20 11:26:46 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -18,7 +18,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
-$VERSION    = "0.18";
+$VERSION    = "0.19";
 @EXPORT     = qw();
 @ISA		= qw(Mail::MboxParser::Base);
 $^W++;
@@ -105,6 +105,22 @@ sub make_convertable(@) {
 		? Mail::MboxParser::Mail::Convertable->new($self->{TOP_ENTITY})
 		: Mail::MboxParser::Mail::Convertable->new($self->get_entities(0));
 }
+
+sub get_field($) {    
+    my ($self, $fieldname) = @_;
+    $self->reset_last;
+
+    my @headerlines = split /\n/, $self->{HEADER};
+    my ($ret, $inretfield);
+    foreach my $bit (@headerlines) {
+        if ($bit =~ /^\s/) { if ($inretfield) { $ret .= $bit."\n"; } }
+        elsif ($bit =~ /^$fieldname/i) { ++$inretfield; $ret .= $bit."\n"; }
+        else { $inretfield = 0; }
+    }
+    $self->{LAST_ERR} = "No such field" if not $ret;
+    return $ret;
+}
+                                                             
 
 sub from() {
 	my $self = shift;
@@ -425,7 +441,12 @@ This will return an index number that represents what Mail::MboxParser considers
 	$signature = $msg->body($msg->find_body)->signature;
 
 Changes are good that find_body does what it is supposed to do.
-	
+
+=item B<get_field(headerfield)>
+
+Returns the specified raw field from the message header, that is: no transformation or decoding is done. Returns multiple lines as needed if the field is "Received" or another multi-line field.  Not case sensitive.
+Sets $mail->error() if the field was not found in which case get_field() returns undef.
+
 =item B<from>
 
 Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty. The name-field does not necessarily contain a value either. Example:
@@ -478,9 +499,9 @@ and could be shortened to this:
 
 It returns a true value on success and undef on failure. In this case, examine the value of $mail->error since the entity you specified with 'n' might not exist.
 
-=item B<store_attachement(n)>
+=item B<store_attachement(n)>  [sic!]
 
-=item B<store_attachement(n, options)>
+=item B<store_attachement(n, options)>  [sic!]
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
 
@@ -519,9 +540,9 @@ If 'path' does not exist, it will try to create the directory for you.
 
 Returns the filename under which the attachement has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
 
-=item B<store_all_attachements>
+=item B<store_all_attachements>  [sic!]
 
-=item B<store_all_attachements(options)>
+=item B<store_all_attachements(options)>  [sic!]
 
 Walks through an entire mail and stores all apparent attachements. 'options' are exactly the same as in store_attachement() with the same behaviour if no options are given. 
 
