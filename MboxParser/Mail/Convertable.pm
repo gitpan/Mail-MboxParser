@@ -124,9 +124,9 @@ This is version 0.50.
 
 =head1 AUTHOR AND COPYRIGHT
 
-Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
+Tassilo von Parseval <tassilo.von.parseval@rwth-aachen.de>
 
-Copyright (c)  2001-2004 Tassilo von Parseval.
+Copyright (c)  2001-2005 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

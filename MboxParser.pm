@@ -87,7 +87,7 @@ use IO::Seekable;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.50";
+$VERSION	= "0.51";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -151,7 +151,7 @@ the default if none given.
     ==========|============|===============================
     oldparser | 1          | uses the old (and slower) 
     (0)       |            | parser (but guaranteed to show
-              |            | the old behaviour
+              |            | the old behaviour)
               |------------|-------------------------------
               | 0          | uses Mail::Mbox::MessageParser
     ==========|============|===============================
@@ -208,6 +208,10 @@ it silently falls back to the pure Perl parser.
 
 =back
 
+When the module was unable to create a C<Mail::Mbox::MessageParser> object, it
+will fall back to the old parser in the hope that the construction of the
+object then succeeds.
+
 =back
 
 =cut
@@ -253,11 +257,11 @@ sub open (@) {
     local *_;
 
     my $source 	= shift @args;
-
+    
     $self->{CONFIG} = { @args };	
     $self->{CURR_POS} = 0;
 
-    my $file_name;
+    my ($file_name, $old_filepos);
     
     # supposedly a filename
     if (! ref $source) {	
@@ -268,13 +272,14 @@ EOC
 	}
 	my $handle = gensym;
 	open $handle, "<$source" or
-	croak "Error: Could not open $source for reading: $!";
+	    croak "Error: Could not open $source for reading: $!";
 	$self->{READER} = $handle;
 	$file_name = $source;
     }
 
     # a filehandle
     elsif (ref $source eq 'GLOB' && seek $source, 0, SEEK_CUR) { 
+	$old_filepos = tell $source;
 	$self->{READER} = $source;
     }
     
@@ -328,7 +333,17 @@ EOC
         $opts->{enable_cache} ||= 0;
         $opts->{file_handle} = $self->{READER};
         $opts->{file_name} = $file_name;
-        $self->{PARSER} = Mail::Mbox::MessageParser->new($opts);
+        if (not ref($self->{PARSER} = Mail::Mbox::MessageParser->new($opts))) {
+	    # when Mail::Mbox::MessageParser object could not be created,
+	    # try to fall back to the old parser
+	    my %opt = @args;
+	    $opt{ oldparser } = 1;
+	    delete $opt{ parseropts };
+	    # $source could be a GLOB which we need to rewind
+	    # if it isn't, the BLOCK-eval should catch it.
+	    eval { seek $source, $old_filepos, SEEK_SET };
+	    return Mail::MboxParser->new($source, %opt);
+	}
     } 
 
     # do line-ending stuff
@@ -963,13 +978,13 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.50.
+This is version 0.51.
 
 =head1 AUTHOR AND COPYRIGHT
 
-Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
+Tassilo von Parseval <tassilo.von.parseval@rwth-aachen.de>
 
-Copyright (c)  2001-2004 Tassilo von Parseval. 
+Copyright (c)  2001-2005 Tassilo von Parseval. 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

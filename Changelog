@@ -1,3 +1,13 @@
+v0.51 (Tue Jan  4 17:36:26 CET 2005)
+
+    + Mail::MboxParser::new() didn't check the return value
+      of Mail::Mbox::MessageParser's constructor which could lead
+      to fatal errors at runtime. When a M::M::MessageParser object
+      could not be created, it now silently falls back to the old
+      parser.
+      (Nigel Horne <njh AT bandsman DOT co DOT uk and
+       David Coppit <david AT coppit DOT org>)
+
 v0.50 (Sun Dec 12 09:38:47 CET 2004)
 
     + At some point in the past this module must have
