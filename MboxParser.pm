@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.34 2001/09/08 08:34:47 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.35 2001/09/09 09:01:49 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -19,7 +19,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.20";
+$VERSION	= "0.21";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -195,9 +195,7 @@ Mail::MboxParser::Mail::Convertable has been newly introduced. As for yet, it of
 
 See also the section ERROR-HANDLING much further below.
 
-----
-
-The below methods refer to Mail::MboxParser-objects.
+More to that, see the relevant manpages of Mail::MboxParser::Mail, Mail::MboxParser::Mail::Body and Mail::MboxParser::Mail::Convertable for a description of the methods for these objects.
 
 =over 4
 
@@ -244,207 +242,7 @@ Returns the number of messages in a mailbox. You could naturally also call get_m
 
 =back
 
-----
-
-The below methods refer to Mail::MboxParser::Mail-objects returned by get_messages.
-
-=over 4
-
-=item B<new(header, body)>
-
-This is usually not called directly but instead by $mb->get_messages. You could however create a mail-object manually providing the header and body both as one string.
-
-=item B<header>
-
-Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so $header{Subject} has to be written as $header{subject}.
-
-=item B<body>
-
-=item B<body(n)>
-
-Returns a Mail::MboxParser::Mail::Body object. For methods upon that see further below. When called with the argument n, the n-th body of the message is retrieved. That is, the body of the n-th entity.
-
-Sets $message->error if something went wrong.
-
-=item B<find_body>
-
-This will return an index number that represents what Mail::MboxParser considers to be the actual (main)-body of an email. This is useful if you don't know about the structure of a message but want to retrieve the message's signature for instance:
-
-	$signature = $msg->body($msg->find_body)->signature;
-
-Changes are good that find_body does what it is supposed to do.
-	
-=item B<from>
-
-Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty. The name-field does not necessarily contain a value either. Example:
-	
-	print $mail->from->{email};
-
-=item B<to>
-
-Returns an array of hash-references of all to-fields in the mail-header. Fields are the same as those of $mail->from. Example:
-
-	for my $recipient ($mail->to) {
-		print $recipient->{name} || "<no name>", "\n";
-		print $recipient->{email};
-	}
-
-=item B<cc>
-
-Identical with to() but returning the hash-refed "Cc: "-line.
-
-=item B<id>
-
-Returns the message-id of a message cutting off the leading and trailing '<' and '>' respectively.
-
-=item B<num_entitities>
-
-Returns the number of MIME-entities. That is, the number of sub-entitities actually. If 0 is returned and you think this is wrong, check $mail->log.
-
-=item B<get_entities>
-
-=item B<get_entities(n)>
-
-Either returns an array of all MIME::Entity objects or one particular if called with a number. If no entity whatsoever could be found, an empty list is returned.
-
-$mail->log instantly called after get_entities will give you some information of what internally may have failed. If set, this will be an error raised by MIME::Entity but you don't need to worry about it at all. It's just for the record.
-
-=item B<get_entity_body(n)>
-
-Returns the body of the n-th MIME::Entity as a single string, undef otherwise in which case you could check $mail->error.
-
-=item B<store_entity_body(n, handle =E<gt> FILEHANDLE)>
-
-Stores the stringified body of n-th entity to the specified filehandle. That's basically the same as:
-
- my $body = $mail->get_entity_body(0);
- print FILEHANDLE $body;
-
-and could be shortened to this:
-
- $mail->store_entity_body(0, handle => \*FILEHANDLE);
-
-It returns a true value on success and undef on failure. In this case, examine the value of $mail->error since the entity you specified with 'n' might not exist.
-
-=item B<store_attachement(n)>
-
-=item B<store_attachement(n, options)>
-
-It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
-
-Unless further 'options' have been given, an attachement (if found) is stored into the current directory under the recommended filename given in the MIME-header. 'options' are specified in key/value pairs:
-
-    key:      | value:       | description:
-    ==========|==============|===============================
-    path      | relative or  | directory to store attachement
-    (".")     | absolute     |
-              | path         |
-    ==========|==============|===============================
-    code      | an anonym    | first argument will be the 
-              | subroutine   | $msg-object, second one the 
-              |              | index-number of the current
-              |              | MIME-part
-              |              | should return a filename for
-              |              | the attachement
-    ==========|==============|===============================
-    args      | additional   | this array-ref will be passed  
-              | arguments as | on to the 'code' subroutine
-              | array-ref    | as a dereferenced array
-
-Example:
-
- 	$msg->store_attachement(1, 
-                            path => "/home/ethan/", 
-                            code => sub {
-                                        my ($msg, $n, @args) = @_;
-                                        return $msg->id."+$n";
-                                        },
-                            args => [ "Foo", "Bar" ]);
-
-This will save the attachement found in the second entity under the name that consists of the message-ID and the appendix "+1" since the above code works on the second entity (that is, with index = 1). 'args' isn't used in this example but should demonstrate how to pass additional arguments. Inside the 'code' sub, @args equals ("Foo", "Bar").
-
-If 'path' does not exist, it will try to create the directory for you.
-
-Returns the filename under which the attachement has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
-
-=item B<store_all_attachements>
-
-=item B<store_all_attachements(options)>
-
-Walks through an entire mail and stores all apparent attachements. 'options' are exactly the same as in store_attachement() with the same behaviour if no options are given. 
-
-Returns a list of files that has been succesfully saved and an empty list if no attachement could be extracted.
-
-$mail->error will tell you possible failures and a possible explanation for that.
-
-=item B<make_convertable>
-
-Returns a Mail::MboxParser::Mail::Convertable object. For details on what you can do with it, read L<Mail::MboxParser::Mail::Convertable>.
-
-=back
-
-----
-
-Methods that apply to Mail::MboxParser::Mail-objects come here:
-
-=over 4
-
-=item B<as_string>
-
-Returns the textual representation of the body as one string. Decoding takes place when the mailbox has been opened using the decode => 'HEADER' | 'ALL' option.
-
-=item B<as_lines>
-
-Sames as as_string() just that you get an array of lines.
-
-=item B<signature>
-
-Returns the signature of a message as an array of lines. Trailing newlines are already removed.
-
-=item B<extract_urls>
-
-=item B<extract_urls (unique =E<gt> 1)>
-
-Returns an array of hash-refs. Each hash-ref has two fields: 'url' and 'context' where context is the line in which the 'url' appeared.
-
-When calling it like $mail->extract_urls(unique => 1), duplicate URLs will be filtered out regardless of the 'context'. That's useful if you just want a list of all URLs that can be found in your mails.
-
-=item B<quotes>
-
-Returns a hash-ref of array-refs where the hash-keys are the several levels of quotation. Each array-element contains the paragraphs of this quotation-level as one string. Example:
-
-	my $quotes = $msg->body($msg->find_body)->quotes;
-	print $quotes->{1}->[0], "\n";
-	print $quotes->{0}->[0], "\n";
-
-This should print the first paragraph of the mail-body that has been quoted once and below that the paragraph that supposedly is the reply to this paragraph. Perhaps thus:
-
-	> I had been trying to work with the CGI module 
-	> but I didn't yet fully understand it.
-
-	Ah, it is tricky. Have you read the CGI-FAQ that 
-	comes with the module?
-
-Mark that empty lines will not be ignored and are part of the lines contained in the array of $quotes->{0}.
-
-So below is a little code-snippet that should, in most cases, restore the first 5 paragraphs (containing quote-level 0 and 1) of an email:
-
-	for (0 .. 5) {
-		print $quotes->{0}->[$_];
-		print $quotes->{1}->[$_];
-	}
-
-Since quotes() considers an empty line between two quotes paragraphs as a paragraph in $quotes->{0}, the paragraphs with one quote and those with zero are balanced. That means: 
-
-scalar @{$quotes->{0}} - DIFF == scalar @{$quotes->{1}} where DIFF is element of {-1, 0, 1}.
-
-Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
-
-=back
-
-----
-
-Common methods for both mailbox- and mail-objects come below. These are about error-handling so you should read the section ERROR-HANDLING as well.
+Common methods for all objects come below:
 
 =over 4
 
@@ -556,17 +354,13 @@ Apart from new bugs that almost certainly have been introduced with this release
 
 =over 4
 
-=item PODS
-
-I need to split them up and put the relevant parts into the respective modules. In its current way it's getting hard to maintain.
-
 =item Transfer-Encoding
 
-Decoding of header-fields and bodies looks dubious to me. It happens intransparently and, more to that, will only deal with quoted-printable encoding. This, however, does not apply to binary attachements as handled with store_attachement and the lot.
+Still, only quoted-printable encoding is correctly handled.
 
 =item Error-handling
 
-Yet hardly implemented for the Body- and Convertable-class. 
+Yet not done for the Convertable-class. 
 
 =item Convertable-class
 
@@ -592,8 +386,6 @@ modify it under the same terms as Perl itself.
 
 L<MIME::Entity>
 
-L<Mail::MboxParser::Mail> to learn how to use MIME::Entity-stuff easily
-
-L<Mail::MboxParser::Mail::Convertable>
+L<Mail::MboxParser::Mail>, L<Mail::MboxParser::Mail::Body>, L<Mail::MboxParser::Mail::Convertable>
 
 =cut

@@ -1,9 +1,16 @@
-# $Id: Changelog,v 1.21 2001/09/07 11:05:51 parkerpine Exp $
+# $Id: Changelog,v 1.22 2001/09/09 08:56:54 parkerpine Exp $
 
-v0.20 
-	+ Mail::MboxParser::new() can now read from virtually 
-	  anything (filename, filehandle, scalar/array-ref)
-	+ introduction of named parameters coming as key/value pairs
+v0.21 (Sun Sep 9 10:37:46 CEST 2001)
+    + decoding is now pretty complete 
+      (whole header, body, quotes, signature)
+    + split up the documentation to the respective modules
+    + $obj->error and $obj->log is now correctly reseted on
+      each method invokation
+
+v0.20 (Sat Sep 8 10:03:23 CEST 2001)
+    + Mail::MboxParser::new() can now read from virtually 
+      anything (filename, filehandle, scalar/array-ref)
+    + introduction of named parameters coming as key/value pairs
     + new class: Mail::MboxParser::Mail::Convertable
     + decoding of header-fields and body
 
