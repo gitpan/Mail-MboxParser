@@ -5,12 +5,13 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Base.pm,v 1.2 2001/09/02 09:31:54 parkerpine Exp $
+# Version: $Id: Base.pm,v 1.3 2001/12/07 17:37:16 parkerpine Exp $
 
 package Mail::MboxParser::Base;
 
 require 5.004;
 
+use strict;
 use vars qw($VERSION);
 $VERSION = "0.02";
 

@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Body.pm,v 1.10 2001/11/26 11:13:37 parkerpine Exp $
+# Version: $Id: Body.pm,v 1.11 2001/12/07 17:37:16 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Body;
 
@@ -19,7 +19,6 @@ use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
 $VERSION 	= "0.05";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
-$^W++;
 
 
 BEGIN { 

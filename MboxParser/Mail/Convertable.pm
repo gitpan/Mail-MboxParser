@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Convertable.pm,v 1.2 2001/09/07 11:10:18 parkerpine Exp $
+# Version: $Id: Convertable.pm,v 1.3 2001/12/07 17:37:16 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Convertable;
 
@@ -19,7 +19,6 @@ use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
 $VERSION 	= "0.01";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
-$^W++;
 
 sub init(@) {	
 	my ($self, $ent, @args) = @_;

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.39 2001/11/28 13:56:11 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.42 2001/12/08 06:44:05 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -12,17 +12,100 @@ require 5.004;
 
 use base 'Mail::MboxParser::Base';
 
+# ----------------------------------------------------------------
+
+=head1 NAME
+
+Mail::MboxParser - read-only access to UNIX-mailboxes
+
+=head1 SYNOPSIS
+
+    use Mail::MboxParser;
+
+    my $mb = Mail::MboxParser->new('some_mailbox', decode => 'ALL');
+
+    # -----------
+    
+    # slurping
+	for my $msg ($mb->get_messages) {
+		print $msg->header->{subject}, "\n";
+		$msg->store_all_attachments('/tmp');
+	}
+
+    # iterating
+    while (my $msg = $mb->next_message) {
+        print $msg->header->{subject}, "\n";
+        # ...
+    }
+
+    # we forgot to do something with the messages
+    $mb->rewind;
+    while (my $msg = $mb->next_message) {
+        # iterate again
+        # ...
+    }
+
+=head1 DESCRIPTION
+
+This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
+
+Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
+
+=head1 METHODS
+
+See also the section ERROR-HANDLING much further below.
+
+More to that, see the relevant manpages of Mail::MboxParser::Mail, Mail::MboxParser::Mail::Body and Mail::MboxParser::Mail::Convertable for a description of the methods for these objects.
+
+=cut
+
+use strict;
 use Mail::MboxParser::Mail;
 use IO::File;
-use strict;
 use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.24";
+$VERSION	= "0.30_2";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
-$^W++;
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<new(mailbox, options)>
+
+=item B<new(scalar-ref, options)>
+
+=item B<new(array-ref, options)>
+
+=item B<new(filehandle, options)>
+
+This creates a new MboxParser-object opening the specified 'mailbox' with either absolute or relative path. 
+
+new() can also take a reference to a variable containing the mailbox either as one string (reference to a scalar) or linewise (reference to an array), or a filehandle from which to read the mailbox.
+
+The following option(s) may be useful. The value in brackets below the key is default if none given.
+
+	key:      | value:     | description:
+	==========|============|===============================
+	decode    | 'NEVER'    | never decode transfer-encoded
+	(NEVER)   |            | data
+	          |------------|-------------------------------
+	          | 'BODY'     | will decode body into a human-
+	          |            | readable format
+	          |------------|-------------------------------
+	          | 'HEADER'   | will decode header fields if
+	          |            | any is encoded
+	          |------------|-------------------------------
+	          | 'ALL'      | decode any data
+
+When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonymous tmp-file is created to hold the data. This procedure is hidden away from the user so there is no need to worry about it. Since a tmp-file acts just like an ordinary mailbox-file you don't need to be concerned about loss of data or so once you have been walking through the mailbox-data. No data will be lost and it'll all be fine and smooth.
+
+=back
+
+=cut
 
 sub init (@) {
 	my ($self, @args) = @_;
@@ -45,11 +128,24 @@ EOC
 	$self;
 }
 
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<open(source, options)>
+
+Takes exactly the same arguments as new() does just that it can be used to change the characteristics of a mailbox on the fly.
+
+=back
+
+=cut
+
 sub open (@) {
 	my ($self, @args) = @_;
 
 	my $source 	= shift @args;
 	$self->{CONFIG} = { @args };	
+    $self->{CURR_POS} = 0;
 	
 	# supposedly a filename
 	if (not ref $source) {	
@@ -78,8 +174,21 @@ EOC
 	elsif 	(ref $source eq 'ARRAY')  	{ print $fh @{$source} }
 	elsif   ($source == \*STDIN) 	  	{ print $fh <STDIN> }
 	$self->{READER} = $fh;
+    seek $self->{READER}, 0, 0;
     return;
 }
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<get_messages>
+
+Returns an array containing all messages in the mailbox respresented as Mail::MboxParser::Mail objects. This method is _minimally_ quicker than iterating over the mailbox using C<next_message> but eats much more memory. Memory-usage will grow linearly for each new message detected since this method creates a huge array containing all messages. After creating this array, it will be returned.
+
+=back
+
+=cut
 
 sub get_messages() {
 	my $self = shift;
@@ -135,14 +244,235 @@ sub get_messages() {
 	}
 	return @messages;
 }
-		
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<get_message(n)>
+
+Returns the n-th message (first message has index 0) in a mailbox. Examine C<$mb-E<gt>error> which contains an error-string if the message does not exist. In this case, C<get_message> returns undef.
+
+=back
+
+=cut
+
+sub get_message($) {
+    my ($self, $num) = @_;
+    
+    $self->reset_last;
+    $self->make_index if ! exists $self->{MSG_IDX};
+
+    my $tmp_idx = $self->current_pos;
+    my $pos     = $self->get_pos($num);
+    
+    if (my $err = $self->error) {
+        $self->set_pos($tmp_idx); 
+        $self->{LAST_ERR} = $err;
+        return;
+    }
+
+    $self->set_pos($pos);
+    my $msg = $self->next_message;
+    $self->set_pos($tmp_idx);
+    return $msg;
+}
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<next_message>
+
+This lets you iterate over a mailbox one mail after another. The great advantage over C<get_messages> is the very low memory-comsumption. It will be at a constant level throughout the execution of your script. Secondly, it almost instantly begins spitting out Mail::MboxParser::Mail-objects since it doesn't have to slurp in all mails before returing them.
+
+=back
+
+=cut
+
+sub next_message() {
+    my $self = shift;
+    $self->reset_last;
+    my $h    = $self->{READER};
+    seek $h, 0, 0;
+
+	my ($in_header, $in_body) = (0, 0);
+	my ($header, $body);
+	my (@header, @body);
+
+	my $got_header = 0;
+	my $from_date  = qr/^From (.*)\d{4}\015?$/;
+	my $empty_line = qr/^\015?$/;
+    
+    seek $h, $self->{CURR_POS}, 0 if $self->{CURR_POS};
+    
+    while (<$h>) { 
+        
+        if (/$from_date/ || eof $h) {
+            if (! $got_header) {
+                ($in_header, $in_body) = (1, 0);
+            }
+            else {
+                $self->{CURR_POS} = tell($h) - length ;
+                return Mail::MboxParser::Mail->new(join ('', @header),
+                                                   join ('', @body),
+                                                   $self->{CONFIG});
+            }
+        }
+        
+        $got_header = 1 if /$empty_line/ && $in_header;
+        
+        if (/$empty_line/ && $got_header) {
+            ($in_header, $in_body) = (0, 1); 
+            $got_header = 1;
+        }
+        
+        push @header, $_ if $in_header;
+        push @body,   $_ if $in_body; 
+        
+    }
+}
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<set_pos(n)>
+
+=item B<rewind>
+
+=item B<current_pos>
+
+These three methods deal with the position of the internal filehandle backening the mailbox. Once you have iterated over the whole mailbox using C<next_message> MboxParser has reached the end of the mailbox and you have to do repositioning if you want to iterate again. You could do this with either C<set_pos> or C<rewind>.
+
+    $mb->rewind;  # equivalent to
+    $mb->set_pos(0);
+
+C<current_pos> reveals the current position in the mailbox and can be used to later return to this position if you want to do tricky things. Mark that C<current_pos> does *not* return the current line but rather the current character as returned by Perl's tell() function.
+    
+    my $last_pos;
+    while (my $msg = $mb->next_message) {
+        # ...
+        if ($msg->header->{subject} eq 'I had been looking for this') {
+            $last_pos = $mb->current_pos;
+            last; # bail out here and do something else
+        }
+    }
+    
+    # ...
+    # ...
+    
+    # now continue where we stopped:
+    $mb->set_pos($last_pos)
+    while (my $msg = $mb->next_message) {
+        # ...
+    }
+
+=back
+
+=cut
+    
+sub set_pos($) { 
+    my ($self, $pos) = @_;
+    $self->reset_last;
+    $self->{CURR_POS} = $pos;
+}
+
+# ----------------------------------------------------------------
+
+sub rewind() { 
+    my $self = shift;
+    $self->reset_last;
+    $self->set_pos(0); 
+}
+
+# ----------------------------------------------------------------
+
+sub current_pos() { 
+    my $self = shift;
+    $self->reset_last;
+    return $self->{CURR_POS};
+}
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<make_index>
+
+You can force the creation of a message-index with this method. The message-index is a mapping between the index-number of a message (0 .. $mb->nmsgs - 1) and the byte-position of the filehandle. This is usually done automatically for you once you call C<get_message> hence the first call for a particular message will be a little slower since the message-index first has to be built. This is, however, done rather quickly. 
+
+You can have a peek at the index if you are interested. The following produces a nicely padded table (suitable for mailboxes up to 9.9999...GB ;-).
+    
+    $mb->make_index;
+    for (0 .. $mb->nmsgs - 1) {
+        printf "%5.5d => %10.10d\n", 
+                $_, $mb->get_pos($_);
+    }   
+
+=back
+
+=cut
+
+sub make_index() {
+    my $self = shift;
+    $self->reset_last;
+    my $h    = $self->{READER};
+    my $from_date  = qr/^From (.*)\d{4}\015?$/;
+    
+    seek $h, 0, 0;
+    
+    my $c = 0;
+    while (<$h>) {
+        $self->{MSG_IDX}->{$c} = tell ($h) - length, $c++ if /$from_date/;
+    }
+    seek $h, 0, 0;
+} 
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<get_pos(n)>
+
+This method takes the index-number of a certain message within the mailbox and returns the corresponding position of the filehandle that represents that start of the file.
+
+It is mainly used by C<get_message()> and you wouldn't really have to bother using it yourself except for statistical purpose as demonstrated above along with B<make_index>.
+
+=back
+
+=cut
+
+sub get_pos($) {
+    my ($self, $num) = @_;
+    $self->reset_last;
+    if (exists $self->{MSG_IDX}) { 
+        if (! exists $self->{MSG_IDX}{$num}) {
+            $self->{LAST_ERR} = "$num: No such message";
+        }
+        return $self->{MSG_IDX}{$num} }
+    else { return }
+}
+
+# ----------------------------------------------------------------
+
+=over 4
+
+=item B<nmsgs>
+
+Returns the number of messages in a mailbox. You could naturally also call get_messages in scalar-context, but this one wont create new objects. It just counts them and thus it is much quicker and wont eat a lot of memory.
+
+=back
+
+=cut
+
 sub nmsgs() {
 	my $self = shift;
-	my $h;
 	if (not $self->{READER}) { return "No mbox opened" }
 	if (not $self->{NMSGS}) {
-		$h = $self->{READER};
+		my $h = $self->{READER};
 		my $from_date = qr/^From (.*)\d{4}\015?$/;
+        seek $h, 0, 0;
 		while (<$h>) {
 			$self->{NMSGS}++ if /$from_date/;
 		}
@@ -150,92 +480,21 @@ sub nmsgs() {
 	return $self->{NMSGS} || "0";	
 }	
 
+# ----------------------------------------------------------------
+
 sub DESTROY {
 	my $self = shift;
 	$self->{NMSGS} = undef;
 	close $self->{READER} if defined $self->{READER};
 }
 
+# ----------------------------------------------------------------
+
 1;		
 
 __END__
 
-=head1 NAME
-
-Mail::MboxParser - read-only access to UNIX-mailboxes
-
-=head1 SYNOPSIS
-
-	use Mail::MboxParser;
-
-	my $mb = Mail::MboxParser->new('some_mailbox');
-
-	for my $msg ($mb->get_messages) {
-		print $msg->from->{name} || "none", "\n";
-		print $msg->from->{email}, "\n";
-		print $msg->header->{subject}, "\n";
-		print $msg->header->{'reply-to'}, "\n";
-		$msg->store_all_attachements('/tmp');
-	}
-
-=head1 DESCRIPTION
-
-This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
-
-Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
-
-=head1 METHODS
-
-See also the section ERROR-HANDLING much further below.
-
-More to that, see the relevant manpages of Mail::MboxParser::Mail, Mail::MboxParser::Mail::Body and Mail::MboxParser::Mail::Convertable for a description of the methods for these objects.
-
-=over 4
-
-=item B<new(mailbox, options)>
-
-=item B<new(scalar-ref, options)>
-
-=item B<new(array-ref, options)>
-
-=item B<new(filehandle, options)>
-
-This creates a new MboxParser-object opening the specified 'mailbox' with either absolute or relative path. 
-
-new() can also take a reference to a variable containing the mailbox either as one string (reference to a scalar) or linewise (reference to an array), or a filehandle from which to read the mailbox.
-
-The following option(s) may be useful. The value in brackets below the key is default if none given.
-
-	key:      | value:     | description:
-	==========|============|===============================
-	decode    | 'NEVER'    | never decode transfer-encoded
-	(NEVER)   |            | data
-	          |------------|-------------------------------
-	          | 'BODY'     | will decode body into a human-
-	          |            | readable format
-	          |------------|-------------------------------
-	          | 'HEADER'   | will decode header fields if
-	          |            | any is encoded
-	          |------------|-------------------------------
-	          | 'ALL'      | decode any data
-
-When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonymous tmp-file is created to hold the data. This procedure is hidden away from the user so there is no need to worry about it. Since a tmp-file acts just like an ordinary mailbox-file you don't need to be concerned about loss of data or so once you have been walking through the mailbox-data. No data will be lost and it'll all be fine and smooth.
-
-=item B<open(source, options)>
-
-Takes exactly the same arguments as new() does just that it can be used to change the characteristics of a mailbox on the fly.
-
-=item B<get_messages>
-
-Returns an array containing all messages in the mailbox respresented as Mail::MboxParser::Mail objects.
-
-=item B<nmsgs>
-
-Returns the number of messages in a mailbox. You could naturally also call get_messages in an array context, but this one wont create new objects. It just counts them and thus it is much quicker and wont eat a lot of memory.
-
-=back
-
-Common methods for all objects come below:
+=head2 METHODS SHARED BY ALL OBJECTS
 
 =over 4
 
@@ -247,7 +506,7 @@ Call this immediately after one of the methods above that mention a possible err
 
 Sort of internal weirdnesses are recorded here. Again only the last event is saved.
 
-=back 
+=back
 
 =head1 ERROR-HANDLING
 
@@ -285,7 +544,7 @@ In the description of the available methods above, you always find a remark when
 
 =item B<(3) errors, that never get visible>
 
-Well, they exist. When you handle MIME-stuff a lot such as attachements etc., Mail::MboxParser internally calls a lot of methods provided by the MIME::Tools package. These work splendidly in most cases, but the MIME::Tools may fail to produce something sensible if you have a very queer or even screwed up mailbox.
+Well, they exist. When you handle MIME-stuff a lot such as attachments etc., Mail::MboxParser internally calls a lot of methods provided by the MIME::Tools package. These work splendidly in most cases, but the MIME::Tools may fail to produce something sensible if you have a very queer or even screwed up mailbox.
 
 If this happens you might find information on that when calling $mail->log. This will give you the more or less unfiltered error-messages produced by MIME::Tools.
 
@@ -329,7 +588,7 @@ grepmail         1852/s        7867%     1806%             461%       --
 
 grepmail is obviously the fastest of all (it is written in C using Inline). Mail::Folder performs worst, but that's because it uses temporary files and will probably need only a little memory. 
 
-Mail::Box by Mark Overmeer is closer to Mail::MboxParser with mailboxes that contain binary-attachements, I don't know why. More to that, it only eats about 50% the memory that Mail::MboxParser needs while still providing more features (at the same time being a little bit more complex in usage).
+Mail::Box by Mark Overmeer is closer to Mail::MboxParser with mailboxes that contain binary-attachments, I don't know why. More to that, it only eats about 50% the memory that Mail::MboxParser needs while still providing more features (at the same time being a little bit more complex in usage).
 
 =head1 BUGS
 
@@ -363,9 +622,7 @@ Much more needs to be done here. Body cannot be modified yet, furthermore interf
 
 Clean-up of the test-scripts is desperately needed. Now they represent rather an arbitrary selection of tested functions. Some are tested several times while others don't show up at all in the suits.
 
-=item Misspellings
-
-I've been told that - confusingly for any native English-speaker - I misspelled 'attachment'. This is annoying in method-names and a source of confusion and mistakes. Will soon be fixed as I find the time to do the necessary changes inside the modules, docs and test-scripts.
+=back 
 
 =head1 THANKS
 

@@ -1,4 +1,45 @@
-# $Id: Changelog,v 1.25 2001/11/28 13:54:13 parkerpine Exp $
+# $Id: Changelog,v 1.28 2001/12/08 06:40:10 parkerpine Exp $
+
+v0.30_1 (Mon Dec  3 12:04:00 CET 2001)
+
+      -----------------------
+      THIS IS A BETA RELEASE! 
+      -----------------------
+      I added a lot of new stuff and I can't thoroughly 
+      test them all. I really need feedback from the users
+      now whether there are stealth-bugs in it....hmmh, bugs
+      are always sort of stealth, aren't they?
+    
+      Beware that store_attachement() and store_all_attachements()
+      have been renamed to their corrected spellings. The (incorrect) old
+      names are still there for backward-compatibility, though.
+      
+      -----------
+      New things:
+      -----------
+    
+    + new next_message mechanism (very memory-friendly)
+      plus needed helper-functions $mb->rewind, ->set_pos,
+      ->current_pos
+    + new get_message(n) method along with more messages 
+      dealing with file-handle positioning and reporting
+      (suggested by Marco Trudel <mtrudel@viviance.com>)
+    + get_attachment method that maps attachments to idx-nums
+      (suggested by Marco Trudel)
+
+    + some fixes:
+        - long-header lines containedwrong number of whitespaces
+          when decoded, fixed
+        - fix of nmsgs when mailbox has already been traversed
+          (filehandle had to be rewinded)
+        - 'attachement'-typos throughout the whole module,
+          both in method-names as well as docs
+          (long outstanding bug reported by Kenn Frankel 
+          <kfrankel@maxstr.com>),
+          'get_entitities'-typo in Mail.pm docs fixed
+        - Removed $^W++ even though it nicely revealed warnings
+          raised in other modules (hehe...)
+        
 
 v0.24 (Wed Nov 28 14:48:05 CET 2001)
     + mailboxes with DOSish line-endings (\015\012)
@@ -39,61 +80,61 @@ v0.16 (Tue Aug 28 11:56:17 CEST 2001)
 	+ 'make test' will no longer fail if URI::Find is not installed
 
 v0.15 (Mon Aug 27 08:30:18 CEST 2001)
-	+ an important change in indexing of MIME-parts:
-	  the message itself is now the entity with the index 0, 
-	  as it should be.
-	  CHECK your scripts if you did a lot of MIME-stuff so that
-	  they reflect the changes
-	+ new class Mail::MboxParser::Mail::Body with methods for 
-	  retrieving the signature and URLs from text
+    + an important change in indexing of MIME-parts:
+      the message itself is now the entity with the index 0, 
+      as it should be.
+      CHECK your scripts if you did a lot of MIME-stuff so that
+      they reflect the changes
+    + new class Mail::MboxParser::Mail::Body with methods for 
+      retrieving the signature and URLs from text
 	
 v0.14 (Fri Aug 24 12:23:36 CEST 2001):
-	+ added an AUTOLOADer for Mail::MboxParser::Mail which will 
-	  usually care that any methods inherited from MIME::Entity
-	  work (mostly) in the expected way
-	  nice side-effect: saves memory
-	+ overloading of " " for Mail::MboxParser::Mail
-	+ fixed some factually wrong documentation
-	+ finally a MANIFEST in the package
+    + added an AUTOLOADer for Mail::MboxParser::Mail which will 
+      usually care that any methods inherited from MIME::Entity
+      work (mostly) in the expected way
+      nice side-effect: saves memory
+    + overloading of " " for Mail::MboxParser::Mail
+    + fixed some factually wrong documentation
+    + finally a MANIFEST in the package
 
 v0.13 (Sat Aug 18 11:04:54 CEST 2001):
-	+ new to()-equivalent cc()
-	+ id() now also resets $mail->error as it should do
-	+ extended documentation for Mail::MboxParser::Mail
-	+ made Mail::MboxParser-docs more eye-friendly
+    + new to()-equivalent cc()
+    + id() now also resets $mail->error as it should do
+    + extended documentation for Mail::MboxParser::Mail
+    + made Mail::MboxParser-docs more eye-friendly
 
 v0.12 (Fri Aug 17 08:35:15 CEST 2001):
-	+ new base-class Mail::MboxParser::Base
-	+ new methods $obj->error, $obj->log
-	+ Mail::MboxParser::Mail now extends MIME::Entity so
-	  $mail->effective_type and stuff should work
-	+ eventually using carp/croak instead of warn/die
-	+ removed a very unpleasant memory-leak which did not allow
-	  for a proper destruction of Mail::MboxParser objects,
-	  happened when doing something like:
-	  @mbs = map { Mail::MboxParser->new($_) } @mboxes;
-	  undef $mbs[0]; # etc...
+    + new base-class Mail::MboxParser::Base
+    + new methods $obj->error, $obj->log
+    + Mail::MboxParser::Mail now extends MIME::Entity so
+      $mail->effective_type and stuff should work
+    + eventually using carp/croak instead of warn/die
+    + removed a very unpleasant memory-leak which did not allow
+      for a proper destruction of Mail::MboxParser objects,
+      happened when doing something like:
+      @mbs = map { Mail::MboxParser->new($_) } @mboxes;
+      undef $mbs[0]; # etc...
 
 v0.11 (Mon Aug 13 17:52:22 CEST 2001):
-	+ new arguments for store_attachement and store_all_attachements
-	  so that filenames for saving can be dynamically assigned
-	  (suggestion by Angeline Koh <abuu@home.com>)
-	+ Mail::Box::SpamDetector class included but not yet properly working,
-	  hence not documented either
+    + new arguments for store_attachement and store_all_attachements
+      so that filenames for saving can be dynamically assigned
+      (suggestion by Angeline Koh <abuu@home.com>)
+    + Mail::Box::SpamDetector class included but not yet properly working,
+      hence not documented either
 
 v0.10 (Sun Aug  5 12:24:56 CEST 2001):
-	+ new method Mail::MboxParser::Mail->to
-	+ additional tests for the above
+    + new method Mail::MboxParser::Mail->to
+    + additional tests for the above
 
 v0.09 (Sat Aug  4 13:58:47 CEST 2001):
-	+ multi-line header-fields are now correctly reckognized
-	  (Kenn Frankel <kfrankel@maxstr.com>)
+    + multi-line header-fields are now correctly reckognized
+      (Kenn Frankel <kfrankel@maxstr.com>)
 
 v0.08 (Wed Aug  1 09:58:18 CEST 2001):
-	+ $self->{ENTITY} now destroys itself once called,
-	  reduces mem-usage when MIME is processed
-	+ new test-suits
-	+ updated PODs
+    + $self->{ENTITY} now destroys itself once called,
+      reduces mem-usage when MIME is processed
+    + new test-suits
+    + updated PODs
 
 v0.07 (Sun Jul 29 11:37:43 CEST 2001):
     + as the MIME stuff, headers are now only parsed

@@ -1,3 +1,40 @@
+
+From friedrich@pythonpros.com  Thu Feb 26 17:23:40 1998
+Received: from dnstx.unitedspacealliance.com (dnstx.unitedspacealliance.com [161.40.254.10])
+	by python.org (8.8.5/8.8.5) with SMTP id RAA24304
+	for <mailman-developers@python.org>; Thu, 26 Feb 1998 17:23:40 -0500 (EST)
+Received: from pythonpros.com by dnstx.unitedspacealliance.com (SMI-8.6/SMI-SVR4)
+	id QAA07985; Thu, 26 Feb 1998 16:23:18 -0600
+Message-ID: <34F5EB6C.4F37CD1E@pythonpros.com>
+Date: Thu, 26 Feb 1998 16:23:40 -0600
+From: Robin Friedrich <friedrich@pythonpros.com>
+Organization: Python Professional Services, Inc.
+X-Mailer: Mozilla 4.04 [en] (Win95; I)
+MIME-Version: 1.0
+To: mailman-developers@python.org
+Subject: List entry indexing
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+
+In a prior round of email, Ken mentioned that we would need to key the
+mail list entries to something other than the person's actual email
+address in order to implement the flexible user information editing
+capability of the web (changing one's sendto address, etc.). I agree
+that this is needed, sooner or later. Since I haven't seen the code yet,
+how difficult is it to just make a unique key for each subscriber and
+key the database off that with address as just one value?
+
+I hope I'm not using this list too soon.
+
+--
+Robin K. Friedrich     Houston, Texas
+  Python Professional Services, Inc.
+      friedrich@pythonpros.com
+     http://www.pythonpros.com
+
+
+
+
 From nobody@p11.speed-link.de Thu Jul 05 08:03:22 2001
 Received: from ethan ([127.0.0.1] helo=localhost)
 	by ethan with esmtp (Exim 3.22 #1 (Debian))

@@ -1,8 +1,21 @@
-$Id: README,v 1.9 2001/11/26 11:13:36 parkerpine Exp $
+$Id: README,v 1.10 2001/12/07 17:35:00 parkerpine Exp $
 
-Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient which has not been intended anyway.
-Its purpose is to _easily_ extract messages from a mailbox with _simple_ access to header fields, body and MIME-parts. It is for those people who find the above two module-sets too confusing. See the list of provided methods below.
-It is particularly easy to deal with any kind of attached files. See the supplied store_att.pl script for an example. 
+THIS IS A BETA RELEASE!!
+
+There are now packages for PPM available as well! See below the bits on 
+installation to learn how to install those.
+
+--------------------------------------------------------------------------------
+
+Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. 
+In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient 
+which has not been intended anyway.
+Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
+access to header fields, body and MIME-parts. It is for those people who 
+find the above two module-sets too confusing and heavy-weighted. See the 
+list of provided methods below.
+It is particularly easy to deal with any kind of attached files. See the 
+supplied store_att.pl script for an example. 
 
 Prerequisites:
 --------------
@@ -11,13 +24,32 @@ URI::Find if you want to use Mail::MboxParser::Mail::Body->extract_urls
 
 Installation:
 -------------
-Un'tar xfz' the module and 'cd' into the new directory Mail-MboxParser-$VERSION.
 
-Then install:
-	perl Makefile.PL
-	make
-	make test
-	make install
+    'make'-enabled systems:
+    -----------------------
+    Un'tar xfz' the module and 'cd' into the new directory 
+    Mail-MboxParser-$VERSION.
+
+    Then install:
+        perl Makefile.PL
+        make
+        make test
+        make install
+
+    Win-users having an 'nmake' installed can also do the above, given the
+    fact they replace 'make' with 'nmake' in the above list.
+
+    Win-systems:
+    ------------
+    On request there is now also a PPM-version of each new package 
+    available (unless I forget to make one;-). Start ppm and do the 
+    following:
+    
+    ppm> set repository sourceforge http://mail-mboxparser.sourceforge.net/ 
+    ppm> search Mail-MboxParser             <== optional!
+    ppm> install Mail-MboxParser-$VERSION
+
+
 
 Autoloader:
 -----------
@@ -37,8 +69,15 @@ Mail::MboxParser::Base (not to be instantiated)
 Mail::MboxParser
 	::new (of course)
 	::open
-	::get_messages (all on array)
-	::nmsgs (no of messages in mailbox)
+	::get_messages  (all in array)
+    ::get_message(n) 
+    ::next_message
+    ::rewind
+    ::set_pos
+    ::current_pos
+    ::get_pos(n)    (of message n)
+    ::make_index
+	::nmsgs (num of messages in mailbox)
 	
 Mail::MboxParser::Mail
 	::new (usually internally called by Mail::MboxParser::get_messages)
@@ -76,7 +115,8 @@ Have a look into the eg-directory of the package for some (or one) example(s).
 
 Contact:
 --------
-Bugs, feature requests, questions, comments etc. should be directly mailed to me.
+Bugs, feature requests, questions, comments etc. should be directly 
+mailed to me.
 
 Tassilo v. Parseval
 <tassilo.parseval@post.rwth-aachen.de>
