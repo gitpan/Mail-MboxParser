@@ -80,7 +80,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.41";
+$VERSION	= "0.42";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -252,13 +252,14 @@ EOC
     if ($self->{CONFIG}->{oldparser} or ! HAVE_MSGPARSER 
         or ! defined $file_name) {
         binmode $self->{READER};
+        local $^W = 0;
         *get_messages   = \&get_messages_old;
         *get_message    = \&get_message_old;
         *next_message   = \&next_message_old;
         
         $self->{CONFIG}->{join_string} = "";
     } else {
-
+        local $^W = 0;
         *get_messages   = \&get_messages_new;
         *get_message    = \&get_message_new;
         *next_message   = \&next_message_new;
@@ -266,7 +267,7 @@ EOC
         $self->{CONFIG}->{join_string} = "\n";
         # check sanity of arguments and capabilities of system:
         # clean options accordingly
-        my $opts = delete $self->{CONFIG}->{parseropts} || { enable_grep => 1 };
+        my $opts = delete($self->{CONFIG}->{parseropts}) || {enable_grep => 1};
         $opts->{enable_grep} = 1 if ! exists $self->{enable_grep};
 
         if ($opts->{enable_grep}) {
@@ -282,7 +283,8 @@ EOC
         Mail::Mbox::MessageParser::SETUP_CACHE( 
             { file_name => $opts->{cache_file_name} }
         ) if $opts->{enable_cache};
-        
+       
+        $opts->{enable_cache} ||= 0;
         $opts->{file_handle} = $self->{READER};
         $opts->{file_name} = $file_name;
         $self->{PARSER} = Mail::Mbox::MessageParser->new($opts);
@@ -835,7 +837,7 @@ David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing i
 
 =head1 VERSION
 
-This is version 0.41.
+This is version 0.42.
 
 =head1 AUTHOR AND COPYRIGHT
 
