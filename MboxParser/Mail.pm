@@ -4,21 +4,21 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.27 2001/08/27 06:33:22 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.32 2001/09/08 08:34:47 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
 require 5.004;
 
-use Mail::MboxParser::SpamDetector;
 use Mail::MboxParser::Mail::Body;
+use Mail::MboxParser::Mail::Convertable;
 use MIME::Parser;
 use Carp;
 
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
-$VERSION    = "0.15";
+$VERSION    = "0.17";
 @EXPORT     = qw();
 @ISA		= qw(Mail::MboxParser::Base);
 $^W++;
@@ -28,13 +28,14 @@ my $Parser = new MIME::Parser; $Parser->output_to_core(1);
 use overload '""' => \&as_string, fallback => 1;
 
 sub init (@) {
-	my ($self, $args) = @_;
-	my ($header, $body) = @{$args};
+	my ($self, @args) = @_;
+	my ($header, $body, $conf) = @args;
 	
 	$self->{HEADER}			= $header;
 	$self->{HEADER_HASH}	= \&split_header;
 	$self->{BODY}			= $body;
 	$self->{TOP_ENTITY}		= 0;
+	$self->{ARGS}			= $conf;
 	$self;
 }
 
@@ -66,7 +67,9 @@ sub body(;$) {
 		if ($bound = $ent->head->get('content-type')) {
 			$bound =~ /boundary="(.*)"/; $bound = $1;
 		}
-		return Mail::MboxParser::Mail::Body->new($ent, $bound);
+		return Mail::MboxParser::Mail::Body->new(	$ent, 
+													$bound, 
+													$self->{ARGS});
 	}
 	
 	# else
@@ -74,8 +77,12 @@ sub body(;$) {
 		$bound =~ /boundary="(.*)"/; $bound = $1;
 	}	
 	return ref $self->{TOP_ENTITY} eq 'MIME::Entity' 
-		?	Mail::MboxParser::Mail::Body->new($self->{TOP_ENTITY}, $bound)
-		:	Mail::MboxParser::Mail::Body->new($self->get_entities(0), $bound);
+		?	Mail::MboxParser::Mail::Body->new(	$self->{TOP_ENTITY}, 
+												$bound,
+												$self->{ARGS})
+		:	Mail::MboxParser::Mail::Body->new(	$self->get_entities(0), 
+												$bound,
+												$self->{ARGS});
 }
 
 sub find_body() {
@@ -90,10 +97,18 @@ sub find_body() {
 	}
 	return $num;
 }
-	
+
+sub make_convertable(@) {
+	my $self = shift;
+	return ref $self->{TOP_ENTITY} eq 'MIME::Entity'
+		? Mail::MboxParser::Mail::Convertable->new($self->{TOP_ENTITY})
+		: Mail::MboxParser::Mail::Convertable->new($self->get_entities(0));
+}
+
 sub from() {
 	my $self = shift;
 	$self->reset_last;
+	my $decode = $self->{ARGS}->{decode} || 'NEVER';
 	
 	my $from = $self->header->{from};
 	my ($name, $email) = split /\s\</, $from;
@@ -102,6 +117,12 @@ sub from() {
 		$email = $name;
 		$name  = "";
 	}
+	
+	if ($decode eq 'HEADER' || $decode eq 'ALL') { 
+		use MIME::Words qw(:all);
+		$name = decode_mimewords($name);
+	}
+
 	return {(name => $name, email => $email)};
 }
 
@@ -166,35 +187,40 @@ sub get_entity_body($) {
 	}
 }
 
-sub store_entity_body($$) {
+sub store_entity_body($@) {
 	my $self = shift;
-	my ($num, $handle) = @_;		
+	my ($num, %args) = @_;		
 	$self->reset_last;
 	
-	if (not $num || not $handle) {
-		croak "Wrong number of arguments for store_entity_body";
+	if (not $num || (not exists $args{handle} && 
+                     ref $args{handle} ne 'GLOB')) {
+		croak <<EOC;
+Wrong number or type of arguments for store_entity_body. Second argument must
+have the form handle => \*FILEHANDLE.
+EOC
 	}
+    my $handle = $args{handle};
 
 	my $b = $self->get_entity_body($num);
 
-	print $handle $b; 
+	print $handle $b if defined $b; 
 	return 1;
 }
 
-sub store_attachement($;$$@) {
+sub store_attachement($@) {
 	my $self = shift;
-	my ($num, $path, $code, @args) = @_;
+	my ($num, %args) = @_;
 	$self->reset_last;
 	
-	$path = "." if not $path;
+	my $path = $args{path} || ".";
 	$path =~ s/\/$//;
 
-	if ($code && ref $code ne 'CODE') {
+	if (defined $args{code} && ref $args{code} ne 'CODE') {
 		carp <<EOW;	
 Warning: Second argument for store_attachement must be
 a coderef. Using filename from header instead
 EOW
-		undef $code; undef @args;
+		delete @args{ qw(code args) };
 	}
 
 	if ($num < $self->num_entities) {
@@ -218,9 +244,11 @@ EOW
 			}
 		}
 		
-		if ($code) { $file = $code->($self, $num, @args) }
+		if (defined $args{code}) { $file = $args{code}->($self, 
+                                                        $num, 
+                                                        @{$args{args}}) }
 		if (open ATT, ">$path/$file") {
-			$self->store_entity_body($num, \*ATT);
+			$self->store_entity_body($num, handle => \*ATT);
 			close ATT ;
 			return $file;
 		}
@@ -235,21 +263,26 @@ EOW
 	}
 }
 
-sub store_all_attachements(;$$@) {
+sub store_all_attachements(@) {
 	my $self = shift;
-	my ($path, $code, @args) = @_;
+    my %args = @_;
 	$self->reset_last;
-
-	if ($code and ref $code ne 'CODE') {
+    
+	if (defined $args{code} and ref $args{code} ne 'CODE') {
 		carp <<EOW; 	
 Warning: Second argument for store_all_attachements must be a coderef. 
 Using filename from header instead 
 EOW
-		undef $code; undef @args;
+		delete @args{ qw(code args) };
 	}
 	my @files;
 	for (0 .. $self->num_entities - 1) {
-		push @files, $self->store_attachement($_, $path, $code, @args);
+		push @files, $self->store_attachement(  $_, 
+                                                path => $args{path} || ".",
+                                                code => $args{code},
+                                                args => $args{args});
+                                               
+                                               
 	}
 	$self->{LAST_ERR} = "Found no attachement at all" if @files == 0;
 	return @files;
@@ -273,6 +306,7 @@ sub as_string {
 sub _recipients($) {
 	my ($self, $field) = @_;
 	$self->reset_last;
+	my $decode = $self->{ARGS}->{decode} || 'NEVER';
 	
 	my $rec = $self->header->{$field};
 	if (not $rec) {
@@ -292,6 +326,12 @@ sub _recipients($) {
 		}
 		push @rec_line, {(name => $name, email => $email)};
 	}
+	
+	if ($decode eq 'HEADER' || $decode eq 'ALL') {
+		use MIME::Words qw(:all);
+		map { $_->{name} = decode_mimewords($_->{name}) } @rec_line;
+	}
+	
 	return @rec_line;
 }
 
@@ -314,7 +354,7 @@ sub split_header {
 			$header{lc($key)} = $value;
 		}
 	}
-	return {%header};
+	return { %header };
 }
 
 sub AUTOLOAD {

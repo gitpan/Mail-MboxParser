@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Body.pm,v 1.7 2001/09/01 06:40:13 parkerpine Exp $
+# Version: $Id: Body.pm,v 1.8 2001/09/03 07:47:49 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Body;
 
@@ -28,12 +28,38 @@ BEGIN {
 }
 
 sub init(@) {
-	my ($self, $args) 	= @_;
-	$self->{CONTENT}	= ${$args}[0]->body; # isa MIME::Body
-	$self->{BOUNDARY}	= ${$args}[1];	     # the one in Content-type
+	my ($self, $ent, $bound, $conf) = @_;
+	$self->{CONTENT}	= $ent->body; 
+	$self->{BOUNDARY}	= $bound;	     # the one in Content-type
+	$self->{ARGS}		= $conf;
 	$self;
 }
 
+sub as_string() {	
+	my $self = shift;
+	if (defined $self->{ARGS}->{decode} &&
+		($self->{ARGS}->{decode} eq 'BODY' ||
+		 $self->{ARGS}->{decode} eq 'ALL')) {
+		use MIME::QuotedPrint;
+		return 
+			join "", map { $_ = decode_qp($_) } @{$self->{CONTENT}};
+	}
+	return join "", @{$self->{CONTENT}};
+}
+	
+
+sub as_lines() { 
+	my $self = shift;
+	if (defined $self->{ARGS}->{decode} &&
+		($self->{ARGS}->{decode} eq 'BODY' ||
+		 $self->{ARGS}->{decode} eq 'ALL')) {
+		use MIME::QuotedPrint; 
+		return map { $_ = decode_qp($_) } @{$self->{CONTENT}};
+	}
+	return @{$self->{CONTENT}};
+}
+					   
+	
 sub signature() {
 	my $self = shift;
 	$self->reset_last;

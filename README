@@ -2,7 +2,7 @@ $Id: README,v 1.6 2001/08/26 13:08:15 parkerpine Exp $
 
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient which has not been intended anyway.
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ access to header fields, body and MIME-parts. It is for those people who find the above two module-sets too confusing. See the list of provided methods below.
-It is particularly easy to deal with any kind of attached files. See the supplied extract_attachements.pl script for an example. 
+It is particularly easy to deal with any kind of attached files. See the supplied store_att.pl script for an example. 
 
 Prerequisites:
 --------------
@@ -52,14 +52,21 @@ Mail::MboxParser::Mail
 	::get_entity_body (body of the n-th entity as single string)
 	::store_attachement 
 	::store_all_attachements (just save all saveable attachements to filehandle)
+    ::make_convertable (create a Mail::MboxParser::Mail::Convertable)
 
 Mail::MboxParser::Mail::Body
 	::new (done internally)
 	::signature (signature of the body if any)
 	::extract_urls (hash-ref with url and context)
-	
+    
+Mail::MboxParser::Mail::Convertable
+    ::new 
+    ::delete_from_header
+    ::replace_in_header
+    ::add_to_header
+    ::send
+    
 Have a look into the eg-directory of the package for some (or one) example(s).
-isspam is a little script that reads one mailbox and performs some tests on them. It spits out a number indicating whether this is spam or not. The higher it is, the more likely. Call it like 'isspam -all /home/user/mailbox'.
 
 Contact:
 --------

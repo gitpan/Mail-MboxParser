@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.30 2001/09/01 06:39:40 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.34 2001/09/08 08:34:47 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -13,45 +13,91 @@ require 5.004;
 use base 'Mail::MboxParser::Base';
 
 use Mail::MboxParser::Mail;
+use IO::File;
 use strict;
 use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.17";
+$VERSION	= "0.20";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
 
-sub init (;$) {
-	my ($self, $file) = @_;
-	
-	if ($file) { $self->open($$file[0]) }
+sub init (@) {
+	my ($self, @args) = @_;
 
+    if (@args == 0) {
+		croak <<EOC;
+Error: open needs either a filename, a filehande (as glob-ref) or a 
+(scalar/array)-referece variable as first argument.
+EOC
+	}
+		
+	# we need odd number of arguments
+	if ((@args % 2) == 0) { 
+		croak <<EOC;
+Error: open() can never have an even number of arguments. 
+See 'perldoc Mail::MboxParser' on how to call it.
+EOC
+	}
+	$self->open(@args); 
 	$self;
 }
 
-sub open ($) {
-	my ($self, $file) = @_;
-	open MBOX, "<$file"
-		or croak "Error: Could not open $file for reading: $!";
-	$self->{READER} = \*MBOX;
+sub open (@) {
+	my ($self, @args) = @_;
+
+	my $source 	= shift @args;
+	$self->{CONFIG} = { @args };	
+	
+	# supposedly a filename
+	if (not ref $source) {	
+		if (! -e $source) {
+			croak <<EOC;
+Error: The filename you passed to open() does not refer to an existing file
+EOC
+		}
+		open MBOX, "<$source" or
+			croak "Error: Could not open $source for reading: $!";
+		$self->{READER} = \*MBOX;
+		return;
+	}
+	
+	# a filehandle
+	elsif (ref $source eq 'GLOB' && $source != \*STDIN) { 
+		$self->{READER} = $source;
+		return;
+	}
+
+	# else
+	my $fh = IO::File->new_tmpfile or croak <<EOC;
+Error: Could not create temporary file. This is very weird.
+EOC
+	if 		(ref $source eq 'SCALAR') 	{ print $fh ${$source} }
+	elsif 	(ref $source eq 'ARRAY')  	{ print $fh @{$source} }
+	elsif   ($source == \*STDIN) 	  	{ print $fh <STDIN> }
+	$self->{READER} = $fh;
+    return;
 }
 
 sub get_messages() {
 	my $self = shift;
+	
 	my ($in_header, $in_body) = (0, 0);
 	my ($header, $body);
 	my (@header, @body);
-	my @messages;
 	my $h = $self->{READER};
-	
+
 	my $got_header;
 	my $from_date  = qr(^From (.*)\d{4}\n$);
 	my $empty_line = qr(^\n$);
 
-	seek $h, 0, 0;
+	my @messages;
+
+	seek $h, 0, 0; 
 	while (<$h>) {
+		
 		# entering header
 		if (not $in_body and /$from_date/) {
 			($in_header, $in_body) = (1, 0);
@@ -68,7 +114,9 @@ sub get_messages() {
 		if ((/$from_date/ or eof) and $got_header) {
 			$header = join '', @header;
 			$body 	= join '', @body;
-			my $m = Mail::MboxParser::Mail->new($header, $body);
+			my $m = Mail::MboxParser::Mail->new($header, 
+												$body, 
+												$self->{CONFIG});
 			push @messages, $m;
 			($in_header, $in_body) = (1, 0);
 			($header, $body) = (undef, undef);
@@ -78,9 +126,11 @@ sub get_messages() {
 		if ($_) {
 			push @header, $_ if $in_header and not $got_header; 
 			push @body, $_ if $in_body and $got_header;
-		}
-
-			
+		}		
+	};
+	
+	if (exists $self->{CONFIG}->{decode}) {
+		$Mail::MboxParser::Mail::Config->{decode} = $self->{CONFIG}->{decode};
 	}
 	return @messages;
 }
@@ -102,7 +152,7 @@ sub nmsgs() {
 sub DESTROY {
 	my $self = shift;
 	$self->{NMSGS} = undef;
-	close $self->{READER};
+	close $self->{READER} if defined $self->{READER};
 }
 
 1;		
@@ -133,9 +183,13 @@ This module attempts to provide a simplified access to standard UNIX-mailboxes. 
 
 Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
 
-B<WARNING:> 
+B<IMPORTANT CHANGES:> 
 
-The interface will change in one of the next releases (probably 0.20). Some obsolete methods may disappear and methods will use named parameters in key/value-pairs.
+If you had been using a previous release of Mail::MboxParser, pay special attention to the changes in the interface. It now should be 'future-proof' since named parameters have been introduced. This makes Mail::MboxParser easily extensible without breaking any scripts depending on this module.
+
+More to that, the rather unlucky SpamDetector class has been wiped out and so the call to is_spam(). There has lately been a release of Mail::SpamAssassin to CPAN. It acts as a plug-in to Mail::Audit and can't yet be used for Mail::MboxParser. This is something for the Convertable-class and on my to-do list.
+
+Mail::MboxParser::Mail::Convertable has been newly introduced. As for yet, it offers only a rudimentary functionality. See the perldocs of this module for details.
 
 =head1 METHODS
 
@@ -147,17 +201,38 @@ The below methods refer to Mail::MboxParser-objects.
 
 =over 4
 
-=item B<new>
+=item B<new(mailbox, options)>
 
-=item B<new(mailbox)>
+=item B<new(scalar-ref, options)>
 
-This creates a new MboxParser-object opening the specified MAILBOX with either absolute or relative path. It does not necessarily need a parameter in which case you need to pass the mailbox to the object using the method 'open'.
-Returns nothing.
+=item B<new(array-ref, options)>
 
-=item B<open(mailbox)>
+=item B<new(filehandle, options)>
 
-Can be used to either pass a mailbox to the MboxParser-object either the first time or for changing the mailbox. 
-Returns nothing.
+This creates a new MboxParser-object opening the specified 'mailbox' with either absolute or relative path. 
+
+new() can also take a reference to a variable containing the mailbox either as one string (reference to a scalar) or linewise (reference to an array), or a filehandle from which to read the mailbox.
+
+The following option(s) may be useful. The value in brackets below the key is default if none given.
+
+	key:      | value:     | description:
+	==========|============|===============================
+	decode    | 'NEVER'    | never decode transfer-encoded
+	(NEVER)   |            | data
+	          |------------|-------------------------------
+	          | 'BODY'     | will decode body into a human-
+	          |            | readable format
+	          |------------|-------------------------------
+	          | 'HEADER'   | will decode header fields if
+	          |            | any is encoded
+	          |------------|-------------------------------
+	          | 'ALL'      | decode any data
+
+When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonymous tmp-file is created to hold the data. This procedure is hidden away from the user so there is no need to worry about it. Since a tmp-file acts just like an ordinary mailbox-file you don't need to be concerned about loss of data or so once you have been walking through the mailbox-data. No data will be lost and it'll all be fine and smooth.
+
+=item B<open(source, options)>
+
+Takes exactly the same arguments as new() does just that it can be used to change the characteristics of a mailbox on the fly.
 
 =item B<get_messages>
 
@@ -238,7 +313,7 @@ $mail->log instantly called after get_entities will give you some information of
 
 Returns the body of the n-th MIME::Entity as a single string, undef otherwise in which case you could check $mail->error.
 
-=item B<store_entity_body(n, FILEHANDLE)>
+=item B<store_entity_body(n, handle =E<gt> FILEHANDLE)>
 
 Stores the stringified body of n-th entity to the specified filehandle. That's basically the same as:
 
@@ -247,52 +322,64 @@ Stores the stringified body of n-th entity to the specified filehandle. That's b
 
 and could be shortened to this:
 
- $mail->store_entity_body(0, \*FILEHANDLE);
+ $mail->store_entity_body(0, handle => \*FILEHANDLE);
 
 It returns a true value on success and undef on failure. In this case, examine the value of $mail->error since the entity you specified with 'n' might not exist.
 
-=item B<store_attachement(n, path)>
+=item B<store_attachement(n)>
 
-=item B<store_attachement(n, path, coderef)>
-
-=item B<store_attachement(n, path, coderef, args)>
+=item B<store_attachement(n, options)>
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
 
-It uses the recommended-filename found in the MIME-header unless a 'coderef' has been given. The coderef is a reference to a subroutine whose first argument will always be the Mail::MboxParser::Mail object and  whose second argument is the index of the current MIME-entity that is processed. The return value is used as the filename under which the attachement is to be saved. Any additional arguments that you want to pass to the coderef can be added as list behind 'coderef'. 'path' is the place where the new file will go to. Example:
+Unless further 'options' have been given, an attachement (if found) is stored into the current directory under the recommended filename given in the MIME-header. 'options' are specified in key/value pairs:
 
-	my $coderef = 
-		sub {
- 			my ($msg, $n, @args) = @_;
-			return $msg->id."_$n";
-		};
-	my @additional = qw(Foo Bar);
- 	$msg->store_attachement(1,       "/home/ethan/", 
-	                        $coderef, @additional);
+    key:      | value:       | description:
+    ==========|==============|===============================
+    path      | relative or  | directory to store attachement
+    (".")     | absolute     |
+              | path         |
+    ==========|==============|===============================
+    code      | an anonym    | first argument will be the 
+              | subroutine   | $msg-object, second one the 
+              |              | index-number of the current
+              |              | MIME-part
+              |              | should return a filename for
+              |              | the attachement
+    ==========|==============|===============================
+    args      | additional   | this array-ref will be passed  
+              | arguments as | on to the 'code' subroutine
+              | array-ref    | as a dereferenced array
 
-This will save the attachement found in the second entity under the name that consists of the message-ID and the appendix "_1" since the above code works on the second entity (that is, with index = 1). @additional isn't used in this example but should demonstrate how to pass additional arguments.
+Example:
+
+ 	$msg->store_attachement(1, 
+                            path => "/home/ethan/", 
+                            code => sub {
+                                        my ($msg, $n, @args) = @_;
+                                        return $msg->id."+$n";
+                                        },
+                            args => [ "Foo", "Bar" ]);
+
+This will save the attachement found in the second entity under the name that consists of the message-ID and the appendix "+1" since the above code works on the second entity (that is, with index = 1). 'args' isn't used in this example but should demonstrate how to pass additional arguments. Inside the 'code' sub, @args equals ("Foo", "Bar").
 
 If 'path' does not exist, it will try to create the directory for you.
 
 Returns the filename under which the attachement has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
 
-=item B<store_all_attachements(path)>
+=item B<store_all_attachements>
 
-=item B<store_all_attachements(path, coderef)>
+=item B<store_all_attachements(options)>
 
-=item B<store_all_attachements(path, coderef args)>
-
-Walks through an entire mail and stores all apparent attachements to 'path'. See the supplied store_att.pl script in the eg-directory of the package to see a useful example.
-
-As for 'coderef', read store_attachement.
+Walks through an entire mail and stores all apparent attachements. 'options' are exactly the same as in store_attachement() with the same behaviour if no options are given. 
 
 Returns a list of files that has been succesfully saved and an empty list if no attachement could be extracted.
 
-$mail->error will tell you poassible failures and a possible explanation for that.
+$mail->error will tell you possible failures and a possible explanation for that.
 
-=item B<is_spam>
+=item B<make_convertable>
 
-Sorry, no documentation on that yet before this is properly implemented. You can, however, try to find out yourself. ;-)
+Returns a Mail::MboxParser::Mail::Convertable object. For details on what you can do with it, read L<Mail::MboxParser::Mail::Convertable>.
 
 =back
 
@@ -301,6 +388,14 @@ Sorry, no documentation on that yet before this is properly implemented. You can
 Methods that apply to Mail::MboxParser::Mail-objects come here:
 
 =over 4
+
+=item B<as_string>
+
+Returns the textual representation of the body as one string. Decoding takes place when the mailbox has been opened using the decode => 'HEADER' | 'ALL' option.
+
+=item B<as_lines>
+
+Sames as as_string() just that you get an array of lines.
 
 =item B<signature>
 
@@ -343,6 +438,8 @@ Since quotes() considers an empty line between two quotes paragraphs as a paragr
 
 scalar @{$quotes->{0}} - DIFF == scalar @{$quotes->{1}} where DIFF is element of {-1, 0, 1}.
 
+Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
+
 =back
 
 ----
@@ -360,46 +457,6 @@ Call this immediately after one of the methods above that mention a possible err
 Sort of internal weirdnesses are recorded here. Again only the last event is saved.
 
 =back 
-
-=head1 FIELDS
-
-Mark that this section will sooner or later vanish. From v0.20 on there'll no longer be any need for knowing about the internal structure of the objects.
-
-Mail::MboxParser basically is a hash-ref:
-
-=over 4
-
-=item B<$mb-E<gt>{READER}>
-
-This is the filehandle from which is read internally. As to yet, it is read-only so you can't use it for writing. This may be changed later.
-
-=item B<$mb-E<gt>{NMSGS}>
-
-Having called nmsgs once this field contains the number of messages in the mailbox. Thus there is no need for calling the method twice which speeds up matters a little.
-
-Mail::MboxParser::Mail consists of the following fields:
-
-=item B<$mail-E<gt>{RAW}>
-
-This field no longer exists in order to save memory. Instead, do something like
-
-	$entire_message = $mail->{HEADER}.$mail->{BODY};
-
-=item B<$mail-E<gt>{HEADER}>
-
-Well, just the header of the message as a string.
-
-=item B<$mail-E<gt>{BODY}>
-
-You guess it.
-
-=item B<$mail-E<gt>{TOP_ENTITY}>
-
-The top-level MIME::Entity of a message. Technically speaking, the message itself from the perspective of MIME::Entity.
-
-This field is undefined until one of the MIME-methods (num_entities, get_entities etc.) is called for the sake of efficiency.
-
-=back
 
 =head1 ERROR-HANDLING
 
@@ -493,6 +550,32 @@ The splitting into name and email, however, does still work here, but you have t
 
 The way of counting the messages and detecting them now complies to RFC 822. This is, however, no guarentee that it all works seamlessly. There are just so many mailboxes that get screwed up by mal-formated mails.
 
+=head1 TODO
+
+Apart from new bugs that almost certainly have been introduced with this release, following things still need to be done:
+
+=over 4
+
+=item PODS
+
+I need to split them up and put the relevant parts into the respective modules. In its current way it's getting hard to maintain.
+
+=item Transfer-Encoding
+
+Decoding of header-fields and bodies looks dubious to me. It happens intransparently and, more to that, will only deal with quoted-printable encoding. This, however, does not apply to binary attachements as handled with store_attachement and the lot.
+
+=item Error-handling
+
+Yet hardly implemented for the Body- and Convertable-class. 
+
+=item Convertable-class
+
+Much more needs to be done here. Body cannot be modified yet, furthermore interfaces to other classes needs to be provided (Mail::Box, perhaps Mail::Folder).
+
+=item Tests
+
+Clean-up of the test-scripts is desperately needed. Now they represent rather an arbitrary selection of tested functions. Some are tested several times while others don't show up at all in the suits.
+
 =head1 THANKS
 
 Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Kenn Frankel and Mark Overmeer for his hints on more object-orientedness.
@@ -510,5 +593,7 @@ modify it under the same terms as Perl itself.
 L<MIME::Entity>
 
 L<Mail::MboxParser::Mail> to learn how to use MIME::Entity-stuff easily
+
+L<Mail::MboxParser::Mail::Convertable>
 
 =cut

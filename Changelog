@@ -1,4 +1,11 @@
-# $Id: Changelog,v 1.19 2001/09/01 06:42:16 parkerpine Exp $
+# $Id: Changelog,v 1.21 2001/09/07 11:05:51 parkerpine Exp $
+
+v0.20 
+	+ Mail::MboxParser::new() can now read from virtually 
+	  anything (filename, filehandle, scalar/array-ref)
+	+ introduction of named parameters coming as key/value pairs
+    + new class: Mail::MboxParser::Mail::Convertable
+    + decoding of header-fields and body
 
 v0.17 (Sat Sep  1 08:36:59 CEST 2001)
 	+ new Mail::MboxParser::Mail::Body::quotes() method

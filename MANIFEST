@@ -5,9 +5,8 @@ MboxParser.pm
 MboxParser/Base.pm
 MboxParser/Mail.pm
 MboxParser/Mail/Body.pm
-MboxParser/SpamDetector.pm
+MboxParser/Mail/Convertable.pm
 README
-eg/isspam
 eg/store_att.pl
 t/1mboxp.t
 t/2mbox.t
@@ -15,5 +14,6 @@ t/3mbox.t
 t/4mbox.t
 t/5mbox.t
 t/6mbox.t
+t/7mbox.t
 t/autoload.t
 t/testbox
