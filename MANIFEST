@@ -17,4 +17,5 @@ t/5_body.t
 t/6_autoload.t
 t/7_attach.t
 t/8_from_trace.t
+t/9_direct_invok.t
 t/testbox

@@ -13,7 +13,7 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = "0.04";
+$VERSION = "0.05";
 
 sub new(@) {
 	my ($class, @args) = @_;
@@ -53,7 +53,7 @@ Nothing to describe nor to document here. Read L<Mail::MboxParser> on how to use
 
 =head1 VERSION
 
-This is version 0.36.
+This is version 0.37.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -20,7 +20,7 @@ Mail::MboxParser::Mail - Provide mail-objects and methods upon
 
 =head1 SYNOPSIS
 
-See L<Mail::MboxParser> for examples on usage.
+See L<Mail::MboxParser> for an outline on usage. Examples however are also provided in this manpage further below.
 
 =head1 DESCRIPTION
 
@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.33";
+$VERSION    = "0.35";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -46,13 +46,30 @@ my $Parser;
 
 use overload '""' => \&as_string, fallback => 1;
 
+BEGIN { $Mail::MboxParser::Mail::NL = "\n" }
+
 # ----------------------------------------------------------------
 
 =over 4
 
 =item B<new(header, body)>
 
-This is usually not called directly but instead by get_messages(). You could however create a mail-object manually providing the header and body each as either one string or as an array-ref representing the lines.
+This is usually not called directly but instead by C<get_messages()>. You could however create a mail-object manually providing the header and body each as either one string or as an array-ref representing the lines.
+
+Here is a common scenario: Retrieving mails from a remote POP-server using Mail::POP3Client and directly feeding each mail to C<Mail::MboxParser::Mail-E<gt>new>:
+
+    use Mail::POP3Client;
+    use Mail::MboxParser::Mail;
+    
+    my $pop = new Mail::POP3Client (...);
+
+    for my $i (1 .. $pop->Count) {
+        my $msg = Mail::MboxParser::Mail->new( [ $pop->Head($i) ],
+                                               [ $pop->Body($i) ] );
+        $msg->store_all_attachments( path => '/home/user/dump' );
+    }
+
+The above effectively behaves like an attachment-only retriever.
 
 =back
 
@@ -67,6 +84,16 @@ sub init (@) {
 	$self->{BODY}			= ref $body ? $body : [ split /$NL/, $body ];
 	$self->{TOP_ENTITY}		= 0;
 	$self->{ARGS}			= $conf;
+
+    # make sure line-endings are ok if called directly
+    if (caller(1) ne 'Mail::MboxParser') {
+        local $_;
+        for (@{ $self->{HEADER} }, @{ $self->{BODY} }) {
+            $_ .= "\n" unless /.*\n$/;
+        }
+        push @{ $self->{HEADER} }, "\n" if $self->{HEADER}->[-1] ne "\n";
+    }
+        
 	$self;
 }
 
@@ -76,7 +103,7 @@ sub init (@) {
 
 =item B<header>
 
-Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so $header{Subject} has to be written as $header{subject}.
+Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so C<$header{Subject}> has to be written as C<$header{subject}>.
 
 If a header-field occurs more than once in the header, the value of the key is an array_ref. Example:
 
@@ -160,7 +187,7 @@ sub trace () {
 
 Returns a Mail::MboxParser::Mail::Body object. For methods upon that see further below. When called with the argument n, the n-th body of the message is retrieved. That is, the body of the n-th entity.
 
-Sets $message->error if something went wrong.
+Sets C<$mail-E<gt>error> if something went wrong.
 
 =back
 
@@ -209,7 +236,7 @@ sub body(;$) {
 
 =item B<find_body>
 
-This will return an index number that represents what Mail::MboxParser considers to be the actual (main)-body of an email. This is useful if you don't know about the structure of a message but want to retrieve the message's signature for instance:
+This will return an index number that represents what Mail::MboxParser::Mail considers to be the actual (main)-body of an email. This is useful if you don't know about the structure of a message but want to retrieve the message's signature for instance:
 
 	$signature = $msg->body($msg->find_body)->signature;
 
@@ -259,13 +286,13 @@ sub make_convertable(@) {
 
 Returns the specified raw field from the message header, that is: the fieldname is not stripped off nor is any decoding done. Returns multiple lines as needed if the field is "Received" or another multi-line field.  Not case sensitive.
 
-C<get_field> always returns one string regardless of how many times the field occured in the header. Multiple occurances are separated by a newline and multiple whitespaces squeezed to one. That means you can process each occurance of the field thusly:
+C<get_field()> always returns one string regardless of how many times the field occured in the header. Multiple occurances are separated by a newline and multiple whitespaces squeezed to one. That means you can process each occurance of the field thusly:
 
     for my $field ( split /\n/, $msg->get_field('received') ) {
         # do something with $field
     }
 
-Sets $mail->error() if the field was not found in which case get_field() returns undef.
+Sets C<$mail-E<gt>error> if the field was not found in which case C<get_field()> returns C<undef>.
 
 =back
 
@@ -306,7 +333,7 @@ sub get_field($) {
 
 =item B<from>
 
-Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empty. The name-field does not necessarily contain a value either. Example:
+Returns a hash-ref with the two fields 'name' and 'email'. Returns C<undef> if empty. The name-field does not necessarily contain a value either. Example:
 	
 	print $mail->from->{email};
 
@@ -334,7 +361,7 @@ sub from() {
 
 =item B<to>
 
-Returns an array of hash-references of all to-fields in the mail-header. Fields are the same as those of $mail->from. Example:
+Returns an array of hash-references of all to-fields in the mail-header. Fields are the same as those of C<$mail-E<gt>from>. Example:
 
 	for my $recipient ($mail->to) {
 		print $recipient->{name} || "<no name>", "\n";
@@ -392,7 +419,7 @@ sub id() {
 
 =item B<num_entities>
 
-Returns the number of MIME-entities. That is, the number of sub-entitities actually. If 0 is returned and you think this is wrong, check $mail->log.
+Returns the number of MIME-entities. That is, the number of sub-entitities actually. If 0 is returned and you think this is wrong, check C<$mail-E<gt>log>.
 
 =back
 
@@ -416,7 +443,7 @@ sub num_entities() {
 
 Either returns an array of all MIME::Entity objects or one particular if called with a number. If no entity whatsoever could be found, an empty list is returned.
 
-$mail->log instantly called after get_entities will give you some information of what internally may have failed. If set, this will be an error raised by MIME::Entity but you don't need to worry about it at all. It's just for the record.
+C<$mail-E<gt>log> instantly called after get_entities will give you some information of what internally may have failed. If set, this will be an error raised by MIME::Entity but you don't need to worry about it at all. It's just for the record.
 
 =back
 
@@ -460,7 +487,7 @@ sub parts(@) { shift->get_entities(@_) }
 
 =item B<get_entity_body(n)>
 
-Returns the body of the n-th MIME::Entity as a single string, undef otherwise in which case you could check $mail->error.
+Returns the body of the n-th MIME::Entity as a single string, undef otherwise in which case you could check C<$mail-E<gt>error>.
 
 =back
 
@@ -576,7 +603,7 @@ The above will only save files that end on '.jpg', not case-sensitive. You could
 
     store_only => '(?i)\.jpg$'
     
-Returns the filename under which the attachment has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
+Returns the filename under which the attachment has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check C<$mail-E<gt>error> to find out which of these possibilities apply.
 
 =back
 
@@ -675,11 +702,11 @@ EOW
 
 =item B<store_all_attachments(options)>  
 
-Walks through an entire mail and stores all apparent attachments. 'options' are exactly the same as in store_attachement() with the same behaviour if no options are given. 
+Walks through an entire mail and stores all apparent attachments. 'options' are exactly the same as in C<store_attachement()> with the same behaviour if no options are given. 
 
-Returns a list of files that has been succesfully saved and an empty list if no attachment could be extracted.
+Returns a list of files that have been succesfully saved and an empty list if no attachment could be extracted.
 
-$mail->error will tell you possible failures and a possible explanation for that.
+C<$mail-E<gt>error> will tell you possible failures and a possible explanation for that.
 
 =back
 
@@ -726,7 +753,7 @@ This method returns a mapping from attachment-names (if those are savable) to in
         print "$filename => $mapping->{$filename}\n";
     }
 
-If called with a string as argument, it tries to look up this filename. If it can't be found, undef is returned. In this case you also should have an error-message patiently awaiting you in the return value of $msg->error().
+If called with a string as argument, it tries to look up this filename. If it can't be found, undef is returned. In this case you also should have an error-message patiently awaiting you in the return value of C<$mail-E<gt>error>.
 
 Even though it looks tempting, don't do the following:
 
@@ -737,7 +764,7 @@ Even though it looks tempting, don't do the following:
             if defined $msg->get_attachments($file);
     }
 
-The reason is that B<get_attachments> is currently *not* optimized to cache the filename mapping. So, each time you call it on (even the same) message, it will scan it from beginning to end. Better would be:
+The reason is that C<get_attachments()> is currently B<not> optimized to cache the filename mapping. So, each time you call it on (even the same) message, it will scan it from beginning to end. Better would be:
 
     # GOOD!
 
@@ -953,18 +980,18 @@ Example:
 		print $msg->effective_type, "\n";
 	}
 
-effective_type() is not implemented by Mail::MboxParser::Mail and thus the corresponding method of MIME::Entity is automatically called.
+C<effective_type()> is not implemented by Mail::MboxParser::Mail and thus the corresponding method of MIME::Entity is automatically called.
 
 To learn about what methods might be useful for you, you should read the "Access"-part of the section "PUBLIC INTERFACE" in the MIME::Entity manpage.
 It may become handy if you have mails with a lot of MIME-parts and you not just want to handle binary-attachments but any kind of MIME-data.
 
 =head1 OVERLOADING
 
-Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fancy feature of Perl and some other languages (C++ for instance) which will change the behaviour of an object when one of those overloaded operators is applied onto it. Here you get the stringified mail when you write "$mail" while otherwise you'd get the stringified reference: Mail::MboxParser::Mail=HASH(...).
+Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fancy feature of Perl and some other languages (C++ for instance) which will change the behaviour of an object when one of those overloaded operators is applied onto it. Here you get the stringified mail when you write C<$mail> while otherwise you'd get the stringified reference: C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.36.
+This is version 0.37.
 
 =head1 AUTHOR AND COPYRIGHT
 

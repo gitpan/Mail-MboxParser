@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.09";
+$VERSION 	= "0.10";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -287,7 +287,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.36.
+This is version 0.37.
 
 =head1 AUTHOR AND COPYRIGHT
 
