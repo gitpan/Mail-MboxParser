@@ -80,7 +80,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.39";
+$VERSION	= "0.40";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -150,11 +150,11 @@ You can't use regexes here since internally this relies on the $/ var ($INPUT_RE
     
 When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonymous tmp-file is created to hold the data. This procedure is hidden away from the user so there is no need to worry about it. Since a tmp-file acts just like an ordinary mailbox-file you don't need to be concerned about loss of data or so once you have been walking through the mailbox-data. No data will be lost and it'll all be fine and smooth.
 
+=over 8
+
 =head2 Specifying parser options
 
 When available, the module will use C<Mail::Mbox::MessageParser> to do the parsing. To get the most speed out of it, you can tweak some of its options. Arguably, you even have to do that in order to make it use caching. Options for the parser are given via the I<parseropts> switch that expects a reference to a hash as values. The values you can specify are:
-
-=over 8
 
 =item enable_cache
 
@@ -484,6 +484,7 @@ sub next_message_old() {
     while (<$h>) { 
 
         if (/$from_date/ || eof $h) {
+            push @body, $_ if eof $h;
             if (! $got_header) {
                 ($in_header, $in_body) = (1, 0);
             }
@@ -834,7 +835,7 @@ David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing i
 
 =head1 VERSION
 
-This is version 0.39.
+This is version 0.40.
 
 =head1 AUTHOR AND COPYRIGHT
 

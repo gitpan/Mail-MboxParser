@@ -1,3 +1,9 @@
+v0.40 (Tue Aug 19 09:14:08 CEST 2003)
+
+    + next_message() and get_message() dropped last
+      line of body if it did not end with a newline
+      (spotted by <marco@aktex.net>)
+
 v0.39 (Tue Aug  5 08:06:50 CEST 2003)
 
     + now uses David Coppit's new Mail::Mbox::MessageParser module 
