@@ -59,15 +59,22 @@ Mail::MboxParser - read-only access to UNIX-mailboxes
 
 =head1 DESCRIPTION
 
-This module attempts to provide a simplified access to standard UNIX-mailboxes. It offers only a subset of methods to get 'straight to the point'. More sophisticated things can still be done by invoking any method from MIME::Tools on the appropriate return values.
+This module attempts to provide a simplified access to standard UNIX-mailboxes.
+It offers only a subset of methods to get 'straight to the point'. More
+sophisticated things can still be done by invoking any method from MIME::Tools
+on the appropriate return values.
 
-Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
+Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted
+with it in any way. It, however, incorporates some invaluable hints by the
+author of Mail::Box, Mark Overmeer.
 
 =head1 METHODS
 
 See also the section ERROR-HANDLING much further below.
 
-More to that, see the relevant manpages of Mail::MboxParser::Mail, Mail::MboxParser::Mail::Body and Mail::MboxParser::Mail::Convertable for a description of the methods for these objects.
+More to that, see the relevant manpages of Mail::MboxParser::Mail,
+Mail::MboxParser::Mail::Body and Mail::MboxParser::Mail::Convertable for a
+description of the methods for these objects.
 
 =cut
 
@@ -80,7 +87,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.44";
+$VERSION	= "0.45";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -102,11 +109,15 @@ my $empty_line  = qr/^\015?$/;
 
 =item B<new(filehandle, options)>
 
-This creates a new MboxParser-object opening the specified 'mailbox' with either absolute or relative path. 
+This creates a new MboxParser-object opening the specified 'mailbox' with
+either absolute or relative path. 
 
-new() can also take a reference to a variable containing the mailbox either as one string (reference to a scalar) or linewise (reference to an array), or a filehandle from which to read the mailbox.
+new() can also take a reference to a variable containing the mailbox either as
+one string (reference to a scalar) or linewise (reference to an array), or a
+filehandle from which to read the mailbox.
 
-The following option(s) may be useful. The value in brackets below the key is the default if none given.
+The following option(s) may be useful. The value in brackets below the key is
+the default if none given.
 
     key:      | value:     | description:
     ==========|============|===============================
@@ -142,23 +153,42 @@ The following option(s) may be useful. The value in brackets below the key is th
               |            | below
     ==========|============|===============================
 
-The I<newline> option comes in handy if you have a mbox-file that happens to not conform to the rules of your operating-system's character semantics one way or another. One such scenario: You are using the module under Win but deliberately have mailboxes with UNIX-newlines (or the other way round). If you do not give this option, 'AUTO' is assumed and some basic tests on the mailbox are performed. This autoedection is of course not capable of detecting cases where you use something like '#DELIMITER' as line-ending. It can as to yet only distinguish between UNIX and Win32ish newlines. You may be lucky and it even works for Macintoshs. If you have more extravagant wishes, pass a costum value:
+The I<newline> option comes in handy if you have a mbox-file that happens to
+not conform to the rules of your operating-system's character semantics one way
+or another. One such scenario: You are using the module under Win but
+deliberately have mailboxes with UNIX-newlines (or the other way round). If you
+do not give this option, 'AUTO' is assumed and some basic tests on the mailbox
+are performed. This autoedection is of course not capable of detecting cases
+where you use something like '#DELIMITER' as line-ending. It can as to yet only
+distinguish between UNIX and Win32ish newlines. You may be lucky and it even
+works for Macintoshs. If you have more extravagant wishes, pass a costum value:
 
     my $mb = new Mail::MboxParser ("mbox", newline => '#DELIMITER');
 
-You can't use regexes here since internally this relies on the $/ var ($INPUT_RECORD_SEPERATOR, that is).
+You can't use regexes here since internally this relies on the $/ var
+($INPUT_RECORD_SEPERATOR, that is).
     
-When passing either a scalar-, array-ref or \*STDIN as first-argument, an anonymous tmp-file is created to hold the data. This procedure is hidden away from the user so there is no need to worry about it. Since a tmp-file acts just like an ordinary mailbox-file you don't need to be concerned about loss of data or so once you have been walking through the mailbox-data. No data will be lost and it'll all be fine and smooth.
+When passing either a scalar-, array-ref or \*STDIN as first-argument, an
+anonymous tmp-file is created to hold the data. This procedure is hidden away
+from the user so there is no need to worry about it. Since a tmp-file acts just
+like an ordinary mailbox-file you don't need to be concerned about loss of data
+or so once you have been walking through the mailbox-data. No data will be lost
+and it'll all be fine and smooth.
 
 =over 8
 
 =head2 Specifying parser options
 
-When available, the module will use C<Mail::Mbox::MessageParser> to do the parsing. To get the most speed out of it, you can tweak some of its options. Arguably, you even have to do that in order to make it use caching. Options for the parser are given via the I<parseropts> switch that expects a reference to a hash as values. The values you can specify are:
+When available, the module will use C<Mail::Mbox::MessageParser> to do the
+parsing. To get the most speed out of it, you can tweak some of its options.
+Arguably, you even have to do that in order to make it use caching. Options for
+the parser are given via the I<parseropts> switch that expects a reference to a
+hash as values. The values you can specify are:
 
 =item enable_cache
 
-When set to a true value, caching is used B<but only> if you gave I<cache_file_name>. There is no default value here!.
+When set to a true value, caching is used B<but only> if you gave
+I<cache_file_name>. There is no default value here!
 
 =item cache_file_name
 
@@ -166,7 +196,9 @@ The file used for caching. This option is mandatory if I<enable_cache> is true.
 
 =item enable_grep
 
-When set to a true value (which is the default), the extern grep(1) is used to speed up parsing. If your system does not provide a usable grep implementation, it silently falls back to the pure Perl parser.
+When set to a true value (which is the default), the extern grep(1) is used to
+speed up parsing. If your system does not provide a usable grep implementation,
+it silently falls back to the pure Perl parser.
 
 =back
 
@@ -202,7 +234,8 @@ EOC
 
 =item B<open(source, options)>
 
-Takes exactly the same arguments as new() does just that it can be used to change the characteristics of a mailbox on the fly.
+Takes exactly the same arguments as new() does just that it can be used to
+change the characteristics of a mailbox on the fly.
 
 =back
 
@@ -311,7 +344,12 @@ EOC
 
 =item B<get_messages>
 
-Returns an array containing all messages in the mailbox respresented as Mail::MboxParser::Mail objects. This method is _minimally_ quicker than iterating over the mailbox using C<next_message> but eats much more memory. Memory-usage will grow linearly for each new message detected since this method creates a huge array containing all messages. After creating this array, it will be returned.
+Returns an array containing all messages in the mailbox respresented as
+Mail::MboxParser::Mail objects. This method is _minimally_ quicker than
+iterating over the mailbox using C<next_message> but eats much more memory.
+Memory-usage will grow linearly for each new message detected since this method
+creates a huge array containing all messages. After creating this array, it
+will be returned.
 
 =back
 
@@ -396,7 +434,9 @@ sub get_messages_old() {
 
 =item B<get_message(n)>
 
-Returns the n-th message (first message has index 0) in a mailbox. Examine C<$mb-E<gt>error> which contains an error-string if the message does not exist. In this case, C<get_message> returns undef.
+Returns the n-th message (first message has index 0) in a mailbox. Examine
+C<$mb-E<gt>error> which contains an error-string if the message does not exist.
+In this case, C<get_message> returns undef.
 
 =back
 
@@ -439,7 +479,11 @@ sub get_message_old($) {
 
 =item B<next_message>
 
-This lets you iterate over a mailbox one mail after another. The great advantage over C<get_messages> is the very low memory-comsumption. It will be at a constant level throughout the execution of your script. Secondly, it almost instantly begins spitting out Mail::MboxParser::Mail-objects since it doesn't have to slurp in all mails before returing them.
+This lets you iterate over a mailbox one mail after another. The great
+advantage over C<get_messages> is the very low memory-comsumption. It will be
+at a constant level throughout the execution of your script. Secondly, it
+almost instantly begins spitting out Mail::MboxParser::Mail-objects since it
+doesn't have to slurp in all mails before returing them.
 
 =back
 
@@ -485,6 +529,8 @@ sub next_message_old() {
     $newopts{ join_string } = '';
     while (<$h>) { 
 
+        $got_header = 1 if eof($h) || /$empty_line/ and $in_header;
+        
         if (/$from_date/ || eof $h) {
             push @body, $_ if eof $h;
             if (! $got_header) {
@@ -497,8 +543,6 @@ sub next_message_old() {
                                                    \%newopts);
             }
         }
-        
-        $got_header = 1 if /$empty_line/ && $in_header;
         
         if (/$empty_line/ && $got_header) {
             ($in_header, $in_body) = (0, 1); 
@@ -521,12 +565,19 @@ sub next_message_old() {
 
 =item B<current_pos>
 
-These three methods deal with the position of the internal filehandle backening the mailbox. Once you have iterated over the whole mailbox using C<next_message> MboxParser has reached the end of the mailbox and you have to do repositioning if you want to iterate again. You could do this with either C<set_pos> or C<rewind>.
+These three methods deal with the position of the internal filehandle backening
+the mailbox. Once you have iterated over the whole mailbox using
+C<next_message> MboxParser has reached the end of the mailbox and you have to
+do repositioning if you want to iterate again. You could do this with either
+C<set_pos> or C<rewind>.
 
     $mb->rewind;  # equivalent to
     $mb->set_pos(0);
 
-C<current_pos> reveals the current position in the mailbox and can be used to later return to this position if you want to do tricky things. Mark that C<current_pos> does *not* return the current line but rather the current character as returned by Perl's tell() function.
+C<current_pos> reveals the current position in the mailbox and can be used to
+later return to this position if you want to do tricky things. Mark that
+C<current_pos> does *not* return the current line but rather the current
+character as returned by Perl's tell() function.
     
     my $last_pos;
     while (my $msg = $mb->next_message) {
@@ -546,11 +597,19 @@ C<current_pos> reveals the current position in the mailbox and can be used to la
         # ...
     }
 
-B<WARNING: > Be very careful with these methods when using the parser of C<Mail::Mbox::MessageParser>. This parser maintains its own state and you shouldn't expect it to always be in sync with the state of C<Mail::MboxParser>. If you need some finer control over the parsing, better consider to use the public interface as described in L<the manpage of Mail::Mbox::MessageParser|Mail::Mbox::MessageParser>. Use C<parser()> to get the underlying parser object.
+B<WARNING: > Be very careful with these methods when using the parser of
+C<Mail::Mbox::MessageParser>. This parser maintains its own state and you
+shouldn't expect it to always be in sync with the state of C<Mail::MboxParser>.
+If you need some finer control over the parsing, better consider to use the
+public interface as described in L<the manpage of
+Mail::Mbox::MessageParser|Mail::Mbox::MessageParser>. Use C<parser()> to get
+the underlying parser object.
 
-This however may expose you to the same problems turned around: C<Mail::MboxParser> may loose its sync with its parser when you do that. 
+This however may expose you to the same problems turned around:
+C<Mail::MboxParser> may loose its sync with its parser when you do that. 
 
-Therefore: Just avoid any of the above for now and wait till C<Mail::Mbox::MessageParser> has a stable interface.
+Therefore: Just avoid any of the above for now and wait till
+C<Mail::Mbox::MessageParser> has a stable interface.
 
 =back
 
@@ -584,9 +643,15 @@ sub current_pos() {
 
 =item B<make_index>
 
-You can force the creation of a message-index with this method. The message-index is a mapping between the index-number of a message (0 .. $mb->nmsgs - 1) and the byte-position of the filehandle. This is usually done automatically for you once you call C<get_message> hence the first call for a particular message will be a little slower since the message-index first has to be built. This is, however, done rather quickly. 
+You can force the creation of a message-index with this method. The
+message-index is a mapping between the index-number of a message (0 ..
+$mb->nmsgs - 1) and the byte-position of the filehandle. This is usually done
+automatically for you once you call C<get_message> hence the first call for a
+particular message will be a little slower since the message-index first has to
+be built. This is, however, done rather quickly. 
 
-You can have a peek at the index if you are interested. The following produces a nicely padded table (suitable for mailboxes up to 9.9999...GB ;-).
+You can have a peek at the index if you are interested. The following produces
+a nicely padded table (suitable for mailboxes up to 9.9999...GB ;-).
     
     $mb->make_index;
     for (0 .. $mb->nmsgs - 1) {
@@ -622,9 +687,13 @@ sub make_index() {
 
 =item B<get_pos(n)>
 
-This method takes the index-number of a certain message within the mailbox and returns the corresponding position of the filehandle that represents that start of the file.
+This method takes the index-number of a certain message within the mailbox and
+returns the corresponding position of the filehandle that represents that start
+of the file.
 
-It is mainly used by C<get_message()> and you wouldn't really have to bother using it yourself except for statistical purpose as demonstrated above along with B<make_index>.
+It is mainly used by C<get_message()> and you wouldn't really have to bother
+using it yourself except for statistical purpose as demonstrated above along
+with B<make_index>.
 
 =back
 
@@ -647,7 +716,9 @@ sub get_pos($) {
 
 =item B<nmsgs>
 
-Returns the number of messages in a mailbox. You could naturally also call get_messages in scalar-context, but this one wont create new objects. It just counts them and thus it is much quicker and wont eat a lot of memory.
+Returns the number of messages in a mailbox. You could naturally also call
+get_messages in scalar-context, but this one wont create new objects. It just
+counts them and thus it is much quicker and wont eat a lot of memory.
 
 =back
 
@@ -675,9 +746,12 @@ sub nmsgs() {
 
 =item B<parser>
 
-Returns the bare C<Mail::Mbox::MessageParser> object. If no such object exists returns C<undef>.
+Returns the bare C<Mail::Mbox::MessageParser> object. If no such object exists
+returns C<undef>.
 
-You can use this method to check whether the module actually uses the old or new parser. If C<parser> returns a false value, it is using the old parsing routines.
+You can use this method to check whether the module actually uses the old or
+new parser. If C<parser> returns a false value, it is using the old parsing
+routines.
 
 =back
 
@@ -729,28 +803,35 @@ __END__
 
 =item B<error>
 
-Call this immediately after one of the methods above that mention a possible error-message. 
+Call this immediately after one of the methods above that mention a possible
+error-message. 
 
 =item B<log>
 
-Sort of internal weirdnesses are recorded here. Again only the last event is saved.
+Sort of internal weirdnesses are recorded here. Again only the last event is
+saved.
 
 =back
 
 =head1 ERROR-HANDLING
 
-Mail::MboxParser provides a mechanism for you to figure out why some methods did not function as you expected. There are four classes of unexpected behavior:
+Mail::MboxParser provides a mechanism for you to figure out why some methods
+did not function as you expected. There are four classes of unexpected
+behavior:
 
 =over 4
 
 =item B<(1) bad arguments >
 
-In this case you called a method with arguments that did not make sense, hence you confused Mail::MboxParser. Example:
+In this case you called a method with arguments that did not make sense, hence
+you confused Mail::MboxParser. Example:
 
   $mail->store_entity_body;           # wrong, needs two arguments
   $mail->store_entity_body(0);        # wrong, still needs one more
 
-In any of the above two cases, you'll get an error message and your script will exit. The message will, however, tell you in which line of your script this error occured.
+In any of the above two cases, you'll get an error message and your script will
+exit. The message will, however, tell you in which line of your script this
+error occured.
 
 =item B<(2) correct arguments but...>
 
@@ -758,62 +839,90 @@ Consider this line:
 
   $mail->store_entity_body(50, \*FH); # could be wrong
 
-Obviously you did call store_entity_body with the correct number of arguments. That's good because now your script wont just exit. Unfortunately, your program can't know in advance whether the particular mail ($mail) has a 51st entity.
+Obviously you did call store_entity_body with the correct number of arguments.
+That's good because now your script wont just exit. Unfortunately, your program
+can't know in advance whether the particular mail ($mail) has a 51st entity.
 
 So, what to do?
 
-Just be brave: Write the above line and do the error-checking afterwards by calling $mail->error immediately after store_entity_body:
+Just be brave: Write the above line and do the error-checking afterwards by
+calling $mail->error immediately after store_entity_body:
 
 	$mail->store_entity_body(50, *\FH);
 	if ($mail->error) {
 		print "Oups, something wrong:", $mail->error;
 	}
 
-In the description of the available methods above, you always find a remark when you could use $mail->error. It always returns a string that you can print out and investigate any further.
+In the description of the available methods above, you always find a remark
+when you could use $mail->error. It always returns a string that you can print
+out and investigate any further.
 
 =item B<(3) errors, that never get visible>
 
-Well, they exist. When you handle MIME-stuff a lot such as attachments etc., Mail::MboxParser internally calls a lot of methods provided by the MIME::Tools package. These work splendidly in most cases, but the MIME::Tools may fail to produce something sensible if you have a very queer or even screwed up mailbox.
+Well, they exist. When you handle MIME-stuff a lot such as attachments etc.,
+Mail::MboxParser internally calls a lot of methods provided by the MIME::Tools
+package. These work splendidly in most cases, but the MIME::Tools may fail to
+produce something sensible if you have a very queer or even screwed up mailbox.
 
-If this happens you might find information on that when calling $mail->log. This will give you the more or less unfiltered error-messages produced by MIME::Tools.
+If this happens you might find information on that when calling $mail->log.
+This will give you the more or less unfiltered error-messages produced by
+MIME::Tools.
 
-My advice: Ignore them! If there really is something in $mail->log it is either because you're mails are totally weird (there is nothing you can do about that then) or these errors are smoothly catched inside Mail::MboxParser in which case all should be fine for you.
+My advice: Ignore them! If there really is something in $mail->log it is either
+because you're mails are totally weird (there is nothing you can do about that
+then) or these errors are smoothly catched inside Mail::MboxParser in which
+case all should be fine for you.
 
 =item B<(4) the apocalyps>
 
-If nothing seems to work the way it should and $mail->error is empty, then the worst case has set in: Mail::MboxParser has a bug.
+If nothing seems to work the way it should and $mail->error is empty, then the
+worst case has set in: Mail::MboxParser has a bug.
 
-Needless to say that there is any way to get around of this. In this case you should contact and I'll examine that.
+Needless to say that there is any way to get around of this. In this case you
+should contact and I'll examine that.
 
 =back
 
 =head1 CAVEATS
 
-I have been working hard on making Mail::MboxParser eat less memory and as quick as possible. Due to that, two time and memory consuming matters are now called on demand. That is, parsing out the MIME-parts and turning the raw header into a hash have become closures.
+I have been working hard on making Mail::MboxParser eat less memory and as
+quick as possible. Due to that, two time and memory consuming matters are now
+called on demand. That is, parsing out the MIME-parts and turning the raw
+header into a hash have become closures.
 
 The drawback of that is that it may get inefficient if you often call 
 
  $mail->header->{field}
 
-In this case you should probably save the return value of $mail->header (a hashref) into a variable since each time you call it the raw header is parsed.
+In this case you should probably save the return value of $mail->header (a
+hashref) into a variable since each time you call it the raw header is parsed.
 
-On the other hand, if you have a mailbox of, say, 25MB, and hold each header of each message in memory, you'll quickly run out of that. So, you can now choose between more performance and more memory.
+On the other hand, if you have a mailbox of, say, 25MB, and hold each header of
+each message in memory, you'll quickly run out of that. So, you can now choose
+between more performance and more memory.
 
-This all does not happen if you just parse a mailbox to extract one header-field (eg. subject), work with that and exit. In this case it will need both less memory and is still considerably quicker. :-)
+This all does not happen if you just parse a mailbox to extract one
+header-field (eg. subject), work with that and exit. In this case it will need
+both less memory and is still considerably quicker. :-)
 
 =head1 BUGS
 
-Some mailers have a fancy idea of how a "To: "- or "Cc: "-line should look. I have seen things like:
+Some mailers have a fancy idea of how a "To: "- or "Cc: "-line should look. I
+have seen things like:
 
-	To: "\"John Doe"\" <john.doe@foo.com>
+	To: "\"John Doe"\" <john.doe@example.com>
 
-The splitting into name and email, however, does still work here, but you have to remove these silly double-quotes and backslashes yourself.
+The splitting into name and email, however, does still work here, but you have
+to remove these silly double-quotes and backslashes yourself.
 
-The way of counting the messages and detecting them now complies to RFC 822. This is, however, no guarentee that it all works seamlessly. There are just so many mailboxes that get screwed up by mal-formated mails.
+The way of counting the messages and detecting them now complies to RFC 822.
+This is, however, no guarentee that it all works seamlessly. There are just so
+many mailboxes that get screwed up by mal-formated mails.
 
 =head1 TODO
 
-Apart from new bugs that almost certainly have been introduced with this release, following things still need to be done:
+Apart from new bugs that almost certainly have been introduced with this
+release, following things still need to be done:
 
 =over 4
 
@@ -823,21 +932,26 @@ Still, only quoted-printable encoding is correctly handled.
 
 =item Tests
 
-Clean-up of the test-scripts is desperately needed. Now they represent rather an arbitrary selection of tested functions. Some are tested several times while others don't show up at all in the suits.
+Clean-up of the test-scripts is desperately needed. Now they represent rather
+an arbitrary selection of tested functions. Some are tested several times while
+others don't show up at all in the suits.
 
 =back 
 
 =head1 THANKS
 
-Thanks to a number of people who gave me invaluable hints that helped me with Mail::Box, notably Mark Overmeer for his hints on more object-orientedness.
+Thanks to a number of people who gave me invaluable hints that helped me with
+Mail::Box, notably Mark Overmeer for his hints on more object-orientedness.
 
-Kenn Frankel (kenn@kenn.cc) kindly patched the broken split-header routine and added get_field().
+Kenn Frankel (kenn AT kenn DOT cc) kindly patched the broken split-header
+routine and added get_field().
 
-David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing it the way I needed to make it work for my module.
+David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing
+it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.44.
+This is version 0.45.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -4,7 +4,7 @@ installation to learn how to install those.
 --------------------------------------------------------------------------------
 
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes.
-This document describes version 0.43.
+This document describes version 0.45.
 
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
 access to header fields, body and MIME-parts. It is for those people who 
@@ -20,7 +20,7 @@ Prerequisites:
     + MIME::QuotedPrint (don't know which version)
     
     optional:
-    + Mail::Mbox::MessageParser (highly recommended!)
+    + Mail::Mbox::MessageParser (highly recommended but not necessary)
     + URI::Find if you want to use Mail::MboxParser::Mail::Body->extract_urls
 
 Installation:
@@ -42,26 +42,19 @@ Installation:
 
     Win-systems:
     ------------
-    I was made aware that ActiveState now turns CPAN additions into
-    PPM distributions automatically. However, this may not happen when
-    their build system enounters some problems. I'll simply assume that
-    Mail::MboxParser wont make problems but I can't be sure. If it turns
-    out that there is no PPM dist available of the current version of this
-    module, please contact me by mail and I will create one and make it
-    publically available.
-   
-    Therefore, first try to install it from the default repository of
-    ActiveState. If it doesn't provide the most current release, try 
-    instead:
+    There should be ppm distributions for ActivePerl under Windows. 
     
-    ppm> set repository sourceforge http://mail-mboxparser.sourceforge.net/ 
-    ppm> search Mail-MboxParser             <== optional!
-    ppm> install Mail-MboxParser-$VERSION
-         [or possibly just:
-         install Mail-MboxParser
-         ]
+    For ActivePerl 5.6.x:
+
+    ppm install 
+        http://www-users.rwth-aachen.de/tassilo.parseval/ppm/mail-mboxparser/0.45/5.6/Mail-MboxParser.ppd
+
+    For ActivePerl 5.8.x:
+
+    ppm install 
+        http://www-users.rwth-aachen.de/tassilo.parseval/ppm/mail-mboxparser/0.45/5.8/Mail-MboxParser.ppd
     
-    If that wont yield anything either, contact me.
+    If the appropriate package cannot be found, please bug the author.
     
 Autoloader:
 -----------

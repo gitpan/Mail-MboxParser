@@ -116,9 +116,11 @@ Literally inherited from Mail::Internet. Commands can be "mail" (using the UNIX-
 
 For more details, see L<Mail::Mailer>
 
+=back 
+
 =head1 VERSION
 
-This is version 0.44.
+This is version 0.45.
 
 =head1 AUTHOR AND COPYRIGHT
 

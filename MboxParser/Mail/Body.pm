@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.11";
+$VERSION 	= "0.12";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -217,8 +217,10 @@ Mail::MboxParser::Mail::Body - rudimentary mail-body object
         
 =head1 DESCRIPTION
 
-This class represents the body of an email-message. 
-Since emails can have multiple MIME-parts and each of these parts has a body it is not always easy to say which part actually holds the text of the message (if there is any at all). Mail::MboxParser::Mail::find_body will help and suggest a part.
+This class represents the body of an email-message.  Since emails can have
+multiple MIME-parts and each of these parts has a body it is not always easy to
+say which part actually holds the text of the message (if there is any at all).
+Mail::MboxParser::Mail::find_body will help and suggest a part.
 
 =head1 METHODS
 
@@ -226,19 +228,24 @@ Since emails can have multiple MIME-parts and each of these parts has a body it 
 
 =item B<as_string ([strip_sig =E<gt> 1])>
 
-Returns the textual representation of the body as one string. Decoding takes place when the mailbox has been opened using the decode => 'BODY' | 'ALL' option.
+Returns the textual representation of the body as one string. Decoding takes
+place when the mailbox has been opened using the decode => 'BODY' | 'ALL'
+option.
 
-If 'strip_sig' is set to a true value, the signature is stripped from the string.
+If 'strip_sig' is set to a true value, the signature is stripped from the
+string.
 
 =item B<as_lines ([strip_sig =E<gt> 1])>
 
 Sames as as_string() just that you get an array of lines.
 
-If 'strip_sig' is set to a true value, the signature is stripped from the string.
+If 'strip_sig' is set to a true value, the signature is stripped from the
+string.
 
 =item B<signature>
 
-Returns the signature of a message as an array of lines. Trailing newlines are already removed.
+Returns the signature of a message as an array of lines. Trailing newlines are
+already removed.
 
 $body->error returns a string if no signature has been found.
 
@@ -246,21 +253,28 @@ $body->error returns a string if no signature has been found.
 
 =item B<extract_urls (unique =E<gt> 1)>
 
-Returns an array of hash-refs. Each hash-ref has two fields: 'url' and 'context' where context is the line in which the 'url' appeared.
+Returns an array of hash-refs. Each hash-ref has two fields: 'url' and
+'context' where context is the line in which the 'url' appeared.
 
-When calling it like $mail->extract_urls(unique => 1), duplicate URLs will be filtered out regardless of the 'context'. That's useful if you just want a list of all URLs that can be found in your mails.
+When calling it like $mail->extract_urls(unique => 1), duplicate URLs will be
+filtered out regardless of the 'context'. That's useful if you just want a list
+of all URLs that can be found in your mails.
 
 $body->error() will return a string if no URLs could be found within the body.
 
 =item B<quotes>
 
-Returns a hash-ref of array-refs where the hash-keys are the several levels of quotation. Each array-element contains the paragraphs of this quotation-level as one string. Example:
+Returns a hash-ref of array-refs where the hash-keys are the several levels of
+quotation. Each array-element contains the paragraphs of this quotation-level
+as one string. Example:
 
 	my $quotes = $msg->body($msg->find_body)->quotes;
 	print $quotes->{1}->[0], "\n";
 	print $quotes->{0}->[0], "\n";
 
-This should print the first paragraph of the mail-body that has been quoted once and below that the paragraph that supposedly is the reply to this paragraph. Perhaps thus:
+This should print the first paragraph of the mail-body that has been quoted
+once and below that the paragraph that supposedly is the reply to this
+paragraph. Perhaps thus:
 
 	> I had been trying to work with the CGI module 
 	> but I didn't yet fully understand it.
@@ -268,18 +282,23 @@ This should print the first paragraph of the mail-body that has been quoted once
 	Ah, it is tricky. Have you read the CGI-FAQ that 
 	comes with the module?
 
-Mark that empty lines will not be ignored and are part of the lines contained in the array of $quotes->{0}.
+Mark that empty lines will not be ignored and are part of the lines contained
+in the array of $quotes->{0}.
 
-So below is a little code-snippet that should, in most cases, restore the first 5 paragraphs (containing quote-level 0 and 1) of an email:
+So below is a little code-snippet that should, in most cases, restore the first
+5 paragraphs (containing quote-level 0 and 1) of an email:
 
 	for (0 .. 5) {
 		print $quotes->{0}->[$_];
 		print $quotes->{1}->[$_];
 	}
 
-Since quotes() considers an empty line between two quotes paragraphs as a paragraph in $quotes->{0}, the paragraphs with one quote and those with zero are balanced. That means: 
+Since quotes() considers an empty line between two quotes paragraphs as a
+paragraph in $quotes->{0}, the paragraphs with one quote and those with zero
+are balanced. That means: 
 
-scalar @{$quotes->{0}} - DIFF == scalar @{$quotes->{1}} where DIFF is element of {-1, 0, 1}.
+scalar @{$quotes->{0}} - DIFF == scalar @{$quotes->{1}} where DIFF is element
+of {-1, 0, 1}.
 
 Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
@@ -287,7 +306,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.44.
+This is version 0.45.
 
 =head1 AUTHOR AND COPYRIGHT
 
