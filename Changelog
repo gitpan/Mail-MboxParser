@@ -1,3 +1,9 @@
+v0.46 (Fri Apr  2 09:51:34 CEST 2004)
+
+    + When using the Mail::Mbox::MessageParser,
+      the script would die on a file with zero length
+      (patch by Lance Cleveland <lance AT proactivewm DOT com>)
+
 v0.45 (Thu Feb  5 10:18:30 CET 2004)
 
     + Mail::MboxParser::Mail::get_field() wasn't properly

@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.38";
+$VERSION    = "0.39";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -84,26 +84,24 @@ The above effectively behaves like an attachment-only retriever.
 =cut
 
 sub init (@) {
-	my ($self, @args) = @_;
-	my ($header, $body, $conf) = @args;
-	
-	$self->{HEADER}			= ref $header ? $header : [ split /$NL/, $header ];
-	$self->{HEADER_HASH}	= \&split_header;
-	$self->{BODY}			= ref $body ? $body : [ split /$NL/, $body ];
-	$self->{TOP_ENTITY}		= 0;
-	$self->{ARGS}			= $conf;
+    my ($self, @args) = @_;
+    my ($header, $body, $conf) = @args;
+
+    $self->{HEADER}      = ref $header ? $header : [ split /$NL/, $header ];
+    $self->{HEADER_HASH} = \&split_header;
+    $self->{BODY}        = ref $body ? $body : [ split /$NL/, $body ];
+    $self->{TOP_ENTITY}  = 0;
+    $self->{ARGS}        = $conf;
 
     # make sure line-endings are ok if called directly
     if (caller(1) ne 'Mail::MboxParser') {
         $self->{ARGS}->{join_string} = '';
-        local $_;
         for (@{ $self->{HEADER} }, @{ $self->{BODY} }) {
             $_ .= "\n" unless /.*\n$/;
         }
         push @{ $self->{HEADER} }, "\n" if $self->{HEADER}->[-1] ne "\n";
     }
-        
-	$self;
+    $self;
 }
 
 # ----------------------------------------------------------------
@@ -129,11 +127,11 @@ an array_ref. Example:
 =cut 
 
 sub header() {
-	my $self = shift;
+    my $self = shift;
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
-	$self->reset_last;
-	
-	return $self->{HEADER_HASH}->($self, $self->{HEADER}, $decode);
+    $self->reset_last;
+
+    return $self->{HEADER_HASH}->($self, $self->{HEADER}, $decode);
 }
 
 # ----------------------------------------------------------------
@@ -208,40 +206,36 @@ Sets C<$mail-E<gt>error> if something went wrong.
 =cut
 
 sub body(;$) { 
-	my ($self, $num) = @_;
-	$self->reset_last;
+    my ($self, $num) = @_;
+    $self->reset_last;
 
-	if (defined $num && $num >= $self->num_entities) {
-		$self->{LAST_ERR} = "No such body";
-		return;
-	}
+    if (defined $num && $num >= $self->num_entities) {
+	$self->{LAST_ERR} = "No such body";
+	return;
+    }
 
-	# body needs the "Content-type: ... boundary=" stuff
-	# in order to decide which lines are part of signature and
-	# which lines are not (ie denote a MIME-part)
-	my $bound; 
-	
-	# particular entity desired?
-	# we need to read the header of this entity then :-(
-	if (defined $num) {		
-		my $ent = $self->get_entities($num);
-		if ($bound = $ent->head->get('content-type')) {
-			$bound =~ /boundary="(.*)"/; $bound = $1;
-		}
-		return Mail::MboxParser::Mail::Body->new($ent, $bound, $self->{ARGS});
+    # body needs the "Content-type: ... boundary=" stuff
+    # in order to decide which lines are part of signature and
+    # which lines are not (ie denote a MIME-part)
+    my $bound; 
+
+    # particular entity desired?
+    # we need to read the header of this entity then :-(
+    if (defined $num) {		
+	my $ent = $self->get_entities($num);
+	if ($bound = $ent->head->get('content-type')) {
+	    $bound =~ /boundary="(.*)"/; $bound = $1;
 	}
+	return Mail::MboxParser::Mail::Body->new($ent, $bound, $self->{ARGS});
+    }
 	
-	# else
-	if ($bound = $self->header->{'content-type'}) { 
-		$bound =~ /boundary="(.*)"/; $bound = $1;
-	}	
-	return ref $self->{TOP_ENTITY} eq 'MIME::Entity' 
-		?	Mail::MboxParser::Mail::Body->new(	$self->{TOP_ENTITY}, 
-												$bound,
-												$self->{ARGS})
-		:	Mail::MboxParser::Mail::Body->new(	scalar $self->get_entities(0), 
-												$bound,
-												$self->{ARGS});
+    # else
+    if ($bound = $self->header->{'content-type'}) { 
+	$bound =~ /boundary="(.*)"/; $bound = $1;
+    }	
+    return ref $self->{TOP_ENTITY} eq 'MIME::Entity' 
+	? Mail::MboxParser::Mail::Body->new($self->{TOP_ENTITY}, $bound, $self->{ARGS})
+	: Mail::MboxParser::Mail::Body->new(scalar $self->get_entities(0), $bound, $self->{ARGS});
 }
 
 # ----------------------------------------------------------------
@@ -264,16 +258,16 @@ Changes are good that find_body does what it is supposed to do.
 =cut
 
 sub find_body() {
-	my $self = shift;
-	$self->{LAST_ERR} = "Could not find a suitable body at all";
-	my $num = -1;
-	for my $part ($self->parts_DFS) {
-		$num++;
-		if ($part->effective_type eq 'text/plain') {
-			$self->reset_last; last;
-		}
+    my $self = shift;
+    $self->{LAST_ERR} = "Could not find a suitable body at all";
+    my $num = -1;
+    for my $part ($self->parts_DFS) {
+	$num++;
+	if ($part->effective_type eq 'text/plain') {
+	    $self->reset_last; last;
 	}
-	return $num;
+    }
+    return $num;
 }
 
 # ----------------------------------------------------------------
@@ -290,10 +284,10 @@ can do with it, read L<Mail::MboxParser::Mail::Convertable>.
 =cut
 
 sub make_convertable(@) {
-	my $self = shift;
-	return ref $self->{TOP_ENTITY} eq 'MIME::Entity'
-		? Mail::MboxParser::Mail::Convertable->new($self->{TOP_ENTITY})
-		: Mail::MboxParser::Mail::Convertable->new($self->get_entities(0));
+    my $self = shift;
+    return ref $self->{TOP_ENTITY} eq 'MIME::Entity'
+	? Mail::MboxParser::Mail::Convertable->new($self->{TOP_ENTITY})
+	: Mail::MboxParser::Mail::Convertable->new($self->get_entities(0));
 }
 
 # ----------------------------------------------------------------
@@ -372,18 +366,18 @@ On behalf of suggestions I received from users, from() tries to be smart when
 =cut
 
 sub from() {
-	my $self = shift;
-	$self->reset_last;
-	
-	my $from = $self->header->{from};
-	my ($name, $email) = split /\s\</, $from;
-	$email =~ s/\>$//g unless not $email;
-	if ($name && ! $email) {
-		$email = $name;
-		$name  = "";
-        $name  = ucfirst($1) . " " . ucfirst($2) if $email =~ /^(.*?)\.(.*)@/;
-	}
-	return {(name => $name, email => $email)};
+    my $self = shift;
+    $self->reset_last;
+
+    my $from = $self->header->{from};
+    my ($name, $email) = split /\s\</, $from;
+    $email =~ s/\>$//g unless not $email;
+    if ($name && ! $email) {
+	$email = $name;
+	$name  = "";
+	$name  = ucfirst($1) . " " . ucfirst($2) if $email =~ /^(.*?)\.(.*)@/;
+    }
+    return {(name => $name, email => $email)};
 }
 
 # ----------------------------------------------------------------
@@ -438,10 +432,10 @@ and '>' respectively.
 =cut
 
 sub id() { 
-	my $self = shift;
-	$self->reset_last;
-	$self->header->{'message-id'} =~ /\<(.*)\>/; 
-	$1; 
+    my $self = shift;
+    $self->reset_last;
+    $self->header->{'message-id'} =~ /\<(.*)\>/; 
+    $1; 
 } 
 
 # ----------------------------------------------------------------
@@ -465,11 +459,11 @@ C<$mail-E<gt>log>.
 =cut
 
 sub num_entities() { 
-	my $self = shift;
-	$self->reset_last;
-	# force list contest becaus of wantarray in get_entities
-	$self->{NUM_ENT} = () = $self->get_entities unless defined $self->{NUM_ENT};
-	return $self->{NUM_ENT};
+    my $self = shift;
+    $self->reset_last;
+    # force list contest becaus of wantarray in get_entities
+    $self->{NUM_ENT} = () = $self->get_entities unless defined $self->{NUM_ENT};
+    return $self->{NUM_ENT};
 }
 
 # ----------------------------------------------------------------
@@ -494,28 +488,28 @@ for the record.
 =cut
 
 sub get_entities(@) {
-	my ($self, $num) = @_;
-	$self->reset_last;
-	
-	if (defined $num && $num >= $self->num_entities) {
-		$self->{LAST_ERR} = "No such entity"; 
-		return;
-	}
-	
-	if (ref $self->{TOP_ENTITY} ne 'MIME::Entity') {
-        
-        if (! defined $Parser) {
-            eval { require MIME::Parser; };
-            $Parser = new MIME::Parser; $Parser->output_to_core(1);
-        }
+    my ($self, $num) = @_;
+    $self->reset_last;
 
-        my $data = $self->as_string;
-		$self->{TOP_ENTITY} = $Parser->parse_data($data);
+    if (defined $num && $num >= $self->num_entities) {
+	$self->{LAST_ERR} = "No such entity"; 
+	return;
+    }
+
+    if (ref $self->{TOP_ENTITY} ne 'MIME::Entity') {
+
+	if (! defined $Parser) {
+	    eval { require MIME::Parser; };
+	    $Parser = new MIME::Parser; $Parser->output_to_core(1);
 	}
-	
-	my @parts = eval { $self->{TOP_ENTITY}->parts_DFS; };
-	$self->{LAST_LOG} = $@ if $@;
-	return wantarray ? @parts : $parts[$num];
+
+	my $data = $self->as_string;
+	$self->{TOP_ENTITY} = $Parser->parse_data($data);
+    }
+
+    my @parts = eval { $self->{TOP_ENTITY}->parts_DFS; };
+    $self->{LAST_LOG} = $@ if $@;
+    return wantarray ? @parts : $parts[$num];
 }
 
 # ----------------------------------------------------------------
@@ -539,18 +533,18 @@ in which case you could check C<$mail-E<gt>error>.
 =cut
 
 sub get_entity_body($) {
-	my $self = shift;
-	my $num  = shift;
-	$self->reset_last;
-	
-	if ($num < $self->num_entities &&
-		$self->get_entities($num)->bodyhandle) {
-		return $self->get_entities($num)->bodyhandle->as_string;
-	}
-	else {
-		$self->{LAST_ERR} = "$num: No such entity";
-		return;
-	}
+    my $self = shift;
+    my $num  = shift;
+    $self->reset_last;
+
+    if ($num < $self->num_entities &&
+	$self->get_entities($num)->bodyhandle) {
+	return $self->get_entities($num)->bodyhandle->as_string;
+    }
+    else {
+	$self->{LAST_ERR} = "$num: No such entity";
+	return;
+    }
 }
 
 # ----------------------------------------------------------------
@@ -578,22 +572,22 @@ exist.
 =cut
 
 sub store_entity_body($@) {
-	my $self = shift;
-	my ($num, %args) = @_;		
-	$self->reset_last;
-	
-	if (not $num || (not exists $args{handle} && 
-                     ref $args{handle} ne 'GLOB')) {
-		croak <<EOC;
+    my $self = shift;
+    my ($num, %args) = @_;		
+    $self->reset_last;
+
+    if (not $num || (not exists $args{handle} && 
+	    ref $args{handle} ne 'GLOB')) {
+	croak <<EOC;
 Wrong number or type of arguments for store_entity_body. Second argument must
 have the form handle => \*FILEHANDLE.
 EOC
-	}
-    
+    }
+
     binmode $args{handle};
-	my $b = $self->get_entity_body($num);
-	print { $args{handle} } $b if defined $b; 
-	return 1;
+    my $b = $self->get_entity_body($num);
+    print { $args{handle} } $b if defined $b; 
+    return 1;
 }
 
 # ----------------------------------------------------------------
@@ -673,89 +667,87 @@ apply.
 =cut
 
 sub store_attachment($@) {
-	my $self = shift;
-	my ($num, %args) = @_;
-	$self->reset_last;
-	
-	my $path = $args{path} || ".";
-	$path =~ s/\/$//;
+    my $self = shift;
+    my ($num, %args) = @_;
+    $self->reset_last;
 
-	if (defined $args{code} && ref $args{code} ne 'CODE') {
-		carp <<EOW;	
+    my $path = $args{path} || ".";
+    $path =~ s/\/$//;
+
+    if (defined $args{code} && ref $args{code} ne 'CODE') {
+	carp <<EOW;	
 Warning: Second argument for store_attachment must be
 a coderef. Using filename from header instead
 EOW
-		delete @args{ qw(code args) };
-	}
-    
-	if ($num < $self->num_entities) {
-		my $file = eval { 
-			$self->get_entities($num)->head->recommended_filename; };
-		$self->{LAST_LOG} = $@;
-		if (not $file) {
-            # test for Content-Disposition
-            if (! $self->get_entities($num)->head->get('content-disposition')) {
-                $self->{LAST_ERR} = "No attachment in entity $num";
-			    return;
-            }
-            else {
-                my ($type, $filename) = split /;\s*/, 
-                    $self->get_entities($num)->head->get('content-disposition');
-                if ($type ne 'attachment') {
-                    $self->{LAST_ERR} = "No attachment in entity $num";
-                    return;
-                }
-                else {
-                    $filename =~ /filename\*?=(.*?''?)?(.*)$/;
-                    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-                    if (! $file) {
-                        $self->{LAST_ERR} = "No attachment in entity $num";
-                        return;
-                    }
-                }
-            }
-		}
-		
-		if (-e $path && not -d $path) {
-			$self->{LAST_ERR} = "$path is a file";
-			return;
-		}
+	delete @args{ qw(code args) };
+    }
 
-		if (not -e $path) {
-			if (not mkdir $path, 0755) {
-				$self->{LAST_ERR} = "Could not create directory $path: $!";
-				return;
-			}
+    if ($num < $self->num_entities) {
+	my $file = eval { $self->get_entities($num)->head->recommended_filename };
+	$self->{LAST_LOG} = $@;
+	if (not $file) {
+	    # test for Content-Disposition
+	    if (! $self->get_entities($num)->head->get('content-disposition')) {
+		$self->{LAST_ERR} = "No attachment in entity $num";
+		return;
+	    }
+	    else {
+		my ($type, $filename) = split /;\s*/, 
+		$self->get_entities($num)->head->get('content-disposition');
+		if ($type ne 'attachment') {
+		    $self->{LAST_ERR} = "No attachment in entity $num";
+		    return;
 		}
-		
-		if (defined $args{code}) { $file = $args{code}->($self, 
-                                                         $num, 
-                                                         @{$args{args}}) }
+		else {
+		    $filename =~ /filename\*?=(.*?''?)?(.*)$/;
+		    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+		    if (! $file) {
+			$self->{LAST_ERR} = "No attachment in entity $num";
+			return;
+		    }
+		}
+	    }
+	}
+
+	if (-e $path && not -d $path) {
+	    $self->{LAST_ERR} = "$path is a file";
+	    return;
+	}
+
+	if (not -e $path) {
+	    if (not mkdir $path, 0755) {
+		$self->{LAST_ERR} = "Could not create directory $path: $!";
+		return;
+	    }
+	}
+
+	if (defined $args{code}) { 
+	    $file = $args{code}->($self, $num, @{$args{args}}) 
+	}
                                                         
         if ($file =~ /^=\?/) { # decode qp if possible
-            eval { require MIME::Words; };
+            eval { require MIME::Words };
             $file = MIME::Words::decode_mimewords($file) if ! $@;
         }
     
-        return if defined $args{store_only} and 
-                  $file !~ /$args{store_only}/;
+        return if defined $args{store_only} and $file !~ /$args{store_only}/;
 
-        local *ATT; 
-		if (open ATT, ">$path/$file") {
-			$self->store_entity_body($num, handle => \*ATT);
-			close ATT ;
-			return $file;
-            
-		}
-		else {
-			$self->{LAST_ERR} = "Could not create $path/$file: $!";
-			return;
-		}
+	local *ATT; 
+	if (open ATT, ">$path/$file") {
+	    $self->store_entity_body($num, handle => \*ATT);
+	    close ATT ;
+	    return $file;
+
 	}
 	else {
-		$self->{LAST_ERR} = "$num: No such entity";
-		return;
+	    $self->{LAST_ERR} = "Could not create $path/$file: $!";
+	    return;
 	}
+    }
+    else {
+	$self->{LAST_ERR} = "$num: No such entity";
+	return;
+    }
 }
 
 # ----------------------------------------------------------------
@@ -781,29 +773,29 @@ for that.
 =cut
 
 sub store_all_attachments(@) {
-	my $self = shift;
+    my $self = shift;
     my %args = @_;
-	$self->reset_last;
-    
-	if (defined $args{code} and ref $args{code} ne 'CODE') {
-		carp <<EOW; 	
+    $self->reset_last;
+
+    if (defined $args{code} and ref $args{code} ne 'CODE') {
+	carp <<EOW; 	
 Warning: Second argument for store_all_attachments must be a coderef. 
 Using filename from header instead 
 EOW
-		delete @args{ qw(code args) };
-	}
-	my @files;
+	delete @args{ qw(code args) };
+    }
+    my @files;
 
     if (! exists $args{path} || $args{path} eq '') {
-        $args{path} = '.';
+	$args{path} = '.';
     }
-    
-	for (0 .. $self->num_entities - 1) {
-		push @files, $self->store_attachment($_, %args);
-	}
 
-	$self->{LAST_ERR} = "Found no attachment at all" if ! @files; 
-	return @files;
+    for (0 .. $self->num_entities - 1) {
+	push @files, $self->store_attachment($_, %args);
+    }
+
+    $self->{LAST_ERR} = "Found no attachment at all" if ! @files; 
+    return @files;
 }
 
 # ----------------------------------------------------------------
@@ -854,140 +846,136 @@ will scan it from beginning to end. Better would be:
 =cut
 
 sub get_attachments(;$) {
-	my ($self, $name) = @_;
-	$self->reset_last;
+    my ($self, $name) = @_;
+    $self->reset_last;
     my %mapping;
-    
+
     for my $num (0 .. $self->num_entities - 1) {
-		my $file = eval { 
-			$self->get_entities($num)->head->recommended_filename; 
-        };
-		$self->{LAST_LOG} = $@;
-		if (! $file) {
-            # test for Content-Disposition
-            if (! $self->get_entities($num)->head->get('content-disposition')) {
-                next;
-            }
-            else {
-                my ($type, $filename) = split /;\s*/, 
-                    $self->get_entities($num)->head->get('content-disposition');
-                if ($type eq 'attachment') {
-                    $filename =~ /filename\*?=(.*?''?)?(.*)$/;
-                    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
-                }
-            }
+	my $file = eval { $self->get_entities($num)->head->recommended_filename };
+	$self->{LAST_LOG} = $@;
+	if (! $file) {
+	    # test for Content-Disposition
+	    if (! $self->get_entities($num)->head->get('content-disposition')) {
+		next;
+	    } else {
+		my ($type, $filename) = split /;\s*/, 
+		$self->get_entities($num)->head->get('content-disposition');
+		if ($type eq 'attachment') {
+		    $filename =~ /filename\*?=(.*?''?)?(.*)$/;
+		    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
 		}
-        
-        next if ! $file;
-        
-        if ($file =~ /^=\?/) { # decode qp if possible
-            eval { require MIME::Words; };
-            $file = MIME::Words::decode_mimewords($file) if ! $@;
-        }
-        
-        $mapping{$file} = $num;
-        
+	    }
 	}
-    
+
+	next if ! $file;
+
+	if ($file =~ /^=\?/) { # decode qp if possible
+	    eval { require MIME::Words };
+	    $file = MIME::Words::decode_mimewords($file) if ! $@;
+	}
+
+	$mapping{$file} = $num;
+
+    }
+
     if ($name) {
-        if (! exists $mapping{$name}) {
-            $self->{LAST_ERR} = "$name: No such attachment";
-            return;
-        }
-        else { return $mapping{$name} }
+	if (! exists $mapping{$name}) {
+	    $self->{LAST_ERR} = "$name: No such attachment";
+	    return;
+	} else { 
+	    return $mapping{$name} 
+	}
     }
-    
+
     if (keys %mapping == 0) {
-        $self->{LAST_ERR} = "No attachments at all";
-        return;
+	$self->{LAST_ERR} = "No attachments at all";
+	return;
     }
-    
+
     return \%mapping;
 }
     
 sub as_string {
-	my $self = shift;
+    my $self = shift;
     my $js = $self->{ARGS}->{join_string};
-	return join $js, @{ $self->{HEADER} }, @{ $self->{BODY} };
+    return join $js, @{ $self->{HEADER} }, @{ $self->{BODY} };
 }
 
 sub _recipients($) {
-	my ($self, $field) = @_;
-	$self->reset_last;
-	
-	my $rec = $self->header->{$field};
-	if (! $rec) {
-		$self->{LAST_ERR} = "'$field' not in header";
-		return;
-	}
+    my ($self, $field) = @_;
+    $self->reset_last;
+
+    my $rec = $self->header->{$field};
+    if (! $rec) {
+	$self->{LAST_ERR} = "'$field' not in header";
+	return;
+    }
 	
     $rec =~ s/(?<=\@)(.*?),/$1\n/g;
-	my @recs = split /\n/, $rec;
-	s/^\s+//, s/\s+$// for @recs; # remove leading or trailing whitespaces
-	my @rec_line;
-	for my $pair (@recs) {
-		my ($name, $email) = split /\s</, $pair;
-		$email =~ s/\>$//g if $email;
-		if ($name && ! $email) {
-			$email = $name;
-			$name  = "";
-            $name  = ucfirst($1) . " " . ucfirst($2) 
-                        if $email =~ /^(.*?)\.(.*)@/;
-		}
-		push @rec_line, {(name => $name, email => $email)};
+    my @recs = split /\n/, $rec;
+    s/^\s+//, s/\s+$// for @recs; # remove leading or trailing whitespaces
+    my @rec_line;
+    for my $pair (@recs) {
+	my ($name, $email) = split /\s</, $pair;
+	$email =~ s/\>$//g if $email;
+	if ($name && ! $email) {
+	    $email = $name;
+	    $name  = "";
+	    $name  = ucfirst($1) . " " . ucfirst($2) if $email =~ /^(.*?)\.(.*)@/;
 	}
-	
-	return @rec_line;
+	push @rec_line, {(name => $name, email => $email)};
+    }
+
+    return @rec_line;
 }
 
 # patch provided            by Kenn Frankel
 # additional corrections    by Nathan Uno
 sub split_header {
     local $/ = $NL;
-	my ($self, $header, $decode) = @_;
-	my @headerlines = @{ $header };
+    my ($self, $header, $decode) = @_;
+    my @headerlines = @{ $header };
 
-	my @header;
+    my @header;
     chomp @headerlines if ref $header;
- 	foreach my $bit (@headerlines) {
-        $bit =~ s/\s+$//;       # discard trailing whitespace
-		if ($bit =~ s/^\s+/ /)  { $header[-1] .= $bit }
-		else 				    { push @header, $bit }
-	}
+    foreach my $bit (@headerlines) {
+	$bit =~ s/\s+$//;       # discard trailing whitespace
+	if ($bit =~ s/^\s+/ /) { $header[-1] .= $bit }
+	else                   { push @header, $bit }
+    }
 											   
-	my ($key, $value);
-	my %header;
-	for (@header) {
-        
-        if    (/^Received:\s/) { push @{$self->{TRACE}}, substr($_, 10) }
-        elsif (/^From /)       { $self->{FROM} = $_ }
-        else {
-            my $idx = index $_, ": ";
-			$key   = substr $_, 0, $idx;
-			$value = $idx != -1 ? substr $_, $idx + 2 : "";
-            if ($decode eq 'ALL' || $decode eq 'HEADER') {
-                use MIME::Words qw(:all);
-                $value = decode_mimewords($value); 
-            }
+    my ($key, $value);
+    my %header;
+    for (@header) {
+	if    (/^Received:\s/) { push @{$self->{TRACE}}, substr($_, 10) }
+	elsif (/^From /)       { $self->{FROM} = $_ }
+	else {
+	    my $idx = index $_, ": ";
+	    $key   = substr $_, 0, $idx;
+	    $value = $idx != -1 ? substr $_, $idx + 2 : "";
+	    if ($decode eq 'ALL' || $decode eq 'HEADER') {
+		use MIME::Words qw(:all);
+		$value = decode_mimewords($value); 
+	    }
 
-            # if such a field is already there => make array-ref
-            if (exists $header{lc($key)}) {
-                my $elem = $header{lc($key)};
-                my @data = ref $elem ? @$elem : $elem;
-                push @data, $value;
-                $header{lc($key)} = [ @data ];
-            }
-            else {
-                $header{lc($key)} = $value;
-            }
-		}
+	    # if such a field is already there => make array-ref
+	    if (exists $header{lc($key)}) {
+		my $elem = $header{lc($key)};
+		my @data = ref $elem ? @$elem : $elem;
+		push @data, $value;
+		$header{lc($key)} = [ @data ];
+	    }
+	    else {
+		$header{lc($key)} = $value;
+	    }
 	}
-	return  \%header;
+    }
+    return  \%header;
 }
 
 sub AUTOLOAD {
-	my ($self, @args) = @_;
-	(my $call = $AUTOLOAD) =~ s/.*:://;
+    my ($self, @args) = @_;
+    (my $call = $AUTOLOAD) =~ s/.*:://;
 
     # for backward-compatibility
     if ($call eq 'store_attachement') { 
@@ -998,45 +986,35 @@ sub AUTOLOAD {
     }
     
 	# test some potential classes that might implement $call
-    { 
-        no strict 'refs';
-    
-        for my $class (qw/MIME::Entity Mail::Internet/) {
-            eval "require $class";
-            # we found a Class that implements $call
-            if ($class->can($call)) {
-                
-                # MIME::Entity needed
-                if ($class eq 'MIME::Entity') {
-                    
-                    if (! defined $Parser) {
-                        eval { require MIME::Parser };
-                        $Parser = new MIME::Parser; 
-                        $Parser->output_to_core(1);
-                    }
-                    my $js = $self->{ARGS}->{join_string};
-                    $self->{TOP_ENTITY} = 
-                        $Parser->parse_data(join $js, @{$self->{HEADER}},
-                                                     @{$self->{BODY}})
-                            if ref $self->{TOP_ENTITY} ne 'MIME::Entity';
-                    return $self->{TOP_ENTITY}->$call(@args);
-                }
+    {   no strict 'refs';
+	for my $class (qw/MIME::Entity Mail::Internet/) {
+	    eval "require $class";
+	    # we found a Class that implements $call
+	    if ($class->can($call)) {
 
-                # Mail::Internet needed
-                if ($class eq 'Mail::Internet') {
-                    return Mail::Internet->new(
-                        [ split /\n/, join "", ref $self->{HEADER}
-                                                ? @{$self->{HEADER}}
-                                                : $self->{HEADER}
-                                            .$self->{BODY} ] 
-                        );
-                }
-                
-            }
-            
-        }
-        
-    }
+		# MIME::Entity needed
+		if ($class eq 'MIME::Entity') {
+
+		    if (! defined $Parser) {
+			eval { require MIME::Parser };
+			$Parser = new MIME::Parser; 
+			$Parser->output_to_core(1);
+		    }
+		    my $js = $self->{ARGS}->{join_string};
+		    $self->{TOP_ENTITY} = $Parser->parse_data(join $js, @{$self->{HEADER}}, @{$self->{BODY}})
+			if ref $self->{TOP_ENTITY} ne 'MIME::Entity';
+		    return $self->{TOP_ENTITY}->$call(@args);
+		}
+
+		# Mail::Internet needed
+		if ($class eq 'Mail::Internet') {
+		    return Mail::Internet->new([ split /\n/, join "", ref $self->{HEADER}
+						? @{$self->{HEADER}}
+						: $self->{HEADER} . $self->{BODY} ]);
+		}
+	    }
+	} # end 'for'
+    } # end 'no strict refs' block
 }
 
 sub DESTROY {
@@ -1080,13 +1058,13 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.45.
+This is version 0.46.
 
 =head1 AUTHOR AND COPYRIGHT
 
 Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001-2002 Tassilo von Parseval.
+Copyright (c)  2001-2004 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

@@ -13,21 +13,21 @@ require 5.004;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = "0.05";
+$VERSION = "0.06";
 
 sub new(@) {
-	my ($class, @args) = @_;
+    my ($class, @args) = @_;
 
-	if ($class eq __PACKAGE__) {
-		use Carp;
-		my $package = __PACKAGE__;
-		croak <<USAGE;
+    if ($class eq __PACKAGE__) {
+	use Carp;
+	my $package = __PACKAGE__;
+	croak <<USAGE;
 $package should not really be instantiated directly. 
 Instead, create one of its derived subclasses such as Mail::MboxParser.
 USAGE
-	}
-	my $self = bless {}, $class;
-	$self->init(@args);
+    }
+    my $self = bless {}, $class;
+    $self->init(@args);
 }
 
 sub error() { shift->{LAST_ERR} }
@@ -35,8 +35,8 @@ sub error() { shift->{LAST_ERR} }
 sub log() { shift->{LAST_LOG} }
 
 sub reset_last { 
-	my $self = shift;
-	($self->{LAST_ERR}, $self->{LAST_LOG}) = (undef, undef);
+    my $self = shift;
+    ($self->{LAST_ERR}, $self->{LAST_LOG}) = (undef, undef);
 }
 
 1;
@@ -53,13 +53,13 @@ Nothing to describe nor to document here. Read L<Mail::MboxParser> on how to use
 
 =head1 VERSION
 
-This is version 0.45.
+This is version 0.46.
 
 =head1 AUTHOR AND COPYRIGHT
 
 Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001-2002 Tassilo von Parseval.
+Copyright (c)  2001-2004 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

@@ -16,175 +16,173 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.12";
+$VERSION 	= "0.13";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
 use overload '""' => sub { shift->as_string }, fallback => 1;
 
 BEGIN { 
-	eval { require URI::Find; };
-	if ($@) 	{ $_HAVE_NOT_URI_FIND = 1 }
+    eval { require URI::Find; };
+    if ($@) { 
+	$_HAVE_NOT_URI_FIND = 1;
+    }
 }
 
 sub init(@) {
-	my ($self, $ent, $bound, $conf) = @_;
-	$self->{CONTENT}	= $ent->body; 
-	$self->{BOUNDARY}	= $bound;	     # the one in Content-type
-	$self->{ARGS}		= $conf;
-	$self;
+    my ($self, $ent, $bound, $conf) = @_;
+    $self->{CONTENT}	= $ent->body; 
+    $self->{BOUNDARY}	= $bound;	     # the one in Content-type
+    $self->{ARGS}	= $conf;
+    $self;
 }
 
 sub as_string {	
-	my ($self, %args) = @_;
+    my ($self, %args) = @_;
     $self->reset_last;
     return join "", $self->as_lines(strip_sig => 1) if $args{strip_sig};
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
-	if ($decode eq 'BODY' || $decode eq 'ALL') {
-		use MIME::QuotedPrint;
-		return join "", map { decode_qp($_) } @{$self->{CONTENT}};
-	}
-	return join "", @{$self->{CONTENT}};
+    if ($decode eq 'BODY' || $decode eq 'ALL') {
+	use MIME::QuotedPrint;
+	return join "", map { decode_qp($_) } @{$self->{CONTENT}};
+    }
+    return join "", @{$self->{CONTENT}};
 }
 	
 
 sub as_lines() { 
-	my ($self, %args) = @_;
+    my ($self, %args) = @_;
     $self->reset_last;
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
-	if ($decode eq 'BODY' || $decode eq 'ALL') {
-		use MIME::QuotedPrint; 
-		return map { decode_qp($_) } @{$self->{CONTENT}};
-	}
+    if ($decode eq 'BODY' || $decode eq 'ALL') {
+	use MIME::QuotedPrint; 
+	return map { decode_qp($_) } @{$self->{CONTENT}};
+    }
 
-	return @{$self->{CONTENT}} if ! $args{strip_sig};
-    
+    return @{$self->{CONTENT}} if ! $args{strip_sig};
+
     my @lines;
     for (@{ $self->{CONTENT} }) {
-        last if /^--\040?[\r\n]?$/;
-        push @lines, $_;
+	last if /^--\040?[\r\n]?$/;
+	push @lines, $_;
     }
     return @lines;
 }
 					   
 	
 sub signature() {
-	my $self = shift;
-	$self->reset_last;
+    my $self = shift;
+    $self->reset_last;
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
-	my $bound = $self->{BOUNDARY};
-	
-	my @signature;
-	my $seperator = 0;
-	for (@{$self->{CONTENT}}) {
-	
-		# we are still outside the signature
-		if (! /^--\040?[\r\n]?$/ && not $seperator) {
-			next;
-		}
-        
-		# we hit the signature delimiter (--)
-		elsif (not $seperator) { $seperator = 1; next }
-        
-	    chomp;	
-        
-		# we are inside signature: is line perhaps MIME-boundary?
-		last if $bound && /^--\Q$bound\E/ && $seperator;
+    my $bound = $self->{BOUNDARY};
 
-		# none of the above => signature line
-		push @signature, $_; 
+    my @signature;
+    my $seperator = 0;
+    for (@{$self->{CONTENT}}) {
+
+	# we are still outside the signature
+	if (! /^--\040?[\r\n]?$/ && not $seperator) {
+	    next;
 	}
-	
-	$self->{LAST_ERR} = "No signature found" if @signature == 0;
-    if ($decode eq 'BODY' || $decode eq 'ALL') {
-        use MIME::QuotedPrint;
-	    map { $_ = decode_qp($_) } @signature;
+
+	# we hit the signature delimiter (--)
+	elsif (not $seperator) { $seperator = 1; next }
+
+	chomp;	
+
+	# we are inside signature: is line perhaps MIME-boundary?
+	last if $bound && /^--\Q$bound\E/ && $seperator;
+
+	# none of the above => signature line
+	push @signature, $_; 
     }
-	return @signature if $seperator;
-	return ();
+	
+    $self->{LAST_ERR} = "No signature found" if !@signature;
+    if ($decode eq 'BODY' || $decode eq 'ALL') {
+	use MIME::QuotedPrint;
+	map { $_ = decode_qp($_) } @signature;
+    }
+    return @signature if $seperator;
+    return ();
 }
 
 sub extract_urls(@) {
-	my ($self, %args) = @_;
-	$self->reset_last;
-	
-	$args{unique} = 0 if not exists $args{unique};
+    my ($self, %args) = @_;
+    $self->reset_last;
 
-	if ($_HAVE_NOT_URI_FIND) {
-		carp <<EOW;
+    $args{unique} = 0 if not exists $args{unique};
+
+    if ($_HAVE_NOT_URI_FIND) {
+	carp <<EOW;
 You need the URI::Find module in order to use extract_urls.
 EOW
-		return;
-	}
-else { 
+	return;
+    }
+    else { 
 	my @uris; my %seen;
-	
+
 	for my $line (@{$self->{CONTENT}}) {
-		chomp $line;
-		URI::Find::find_uris($line, sub {
-							my (undef, $url) = @_;
-							$line =~ s/^\s+|\s+$//;
-							if (not $seen{$url}) {
-								push @uris, { 	url => $url, 
-												context => $line }
-							}
-							$seen{$url}++ if $args{unique};
-						}
-			);
+	    chomp $line;
+	    URI::Find::find_uris($line, sub {
+		    my (undef, $url) = @_;
+		    $line =~ s/^\s+|\s+$//;
+		    if (not $seen{$url}) {
+			push @uris, { url => $url, context => $line };
+		    }
+		    $seen{$url}++ if $args{unique};
+		}
+	    );
 	}
 	$self->{LAST_ERR} = "No URLs found" if @uris == 0;
-	
+
 	return @uris;
-	}
+    }
 }
 
 sub quotes() {
-	my $self = shift;
+    my $self = shift;
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
-	$self->reset_last;
-	
-	my %ret;
-	my $q 		= 0; # num of '>'
-	my $in 		= 0; # being inside a quote
-	my $last 	= 0; # num of quotes in last line
-	
-	for (@{$self->{CONTENT}}) {
-	    
-        if ($decode eq 'ALL' || $decode eq 'BODY') {
-            use MIME::QuotedPrint;
-            $_ = decode_qp($_);
-        }
-        
-		# count quotation signs
-		$q = 0;
-		my $t = "a" x length;
-		for my $c (unpack $t, $_) {
-			if ($c eq '>') 				{ $q++ }
-			if ($c ne '>' && $c ne ' ') { last }
-		}
-		
-		# first: create a hash-element for level $q
-		if (! exists $ret{$q}) {
-			$ret{$q}= [];
-		}
-		
-		# if last line had the same level as current one:
-		# attach the line to the last one
-		if ($last == $q) {
-			
-			if (@{$ret{$q}} == 0) { $ret{$q}->[$q] .= $_ }
-			else { $ret{$q}->[-1] .= $_ }
-			
-		}
-		
-		# if not:
-		# create a new array-element in the appropriate hash-element
-		else { push @{$ret{$q}}, $_ }
-		
-		$last = $q;
-		
+    $self->reset_last;
+
+    my %ret;
+    my $q 		= 0; # num of '>'
+    my $in 		= 0; # being inside a quote
+    my $last 	= 0; # num of quotes in last line
+
+    for (@{$self->{CONTENT}}) {
+
+	if ($decode eq 'ALL' || $decode eq 'BODY') {
+	    use MIME::QuotedPrint;
+	    $_ = decode_qp($_);
 	}
-	return \%ret;
+        
+	# count quotation signs
+	$q = 0;
+	my $t = "a" x length;
+	for my $c (unpack $t, $_) {
+	    if ($c eq '>') 		{ $q++ }
+	    if ($c ne '>' && $c ne ' ') { last }
+	}
+
+	# first: create a hash-element for level $q
+	if (! exists $ret{$q}) {
+	    $ret{$q} = [];
+	}
+
+	# if last line had the same level as current one:
+	# attach the line to the last one
+	if ($last == $q) {
+	    if (@{$ret{$q}} == 0)   { $ret{$q}->[$q] .= $_ }
+	    else		    { $ret{$q}->[-1] .= $_ }
+	}
+	# if not:
+	# create a new array-element in the appropriate hash-element
+	else { 
+	    push @{$ret{$q}}, $_;
+	}
+	$last = $q;
+    }
+    return \%ret;
 }
 
 
@@ -306,13 +304,13 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.45.
+This is version 0.46.
 
 =head1 AUTHOR AND COPYRIGHT
 
 Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001-2002 Tassilo von Parseval.
+Copyright (c)  2001-2004 Tassilo von Parseval.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 

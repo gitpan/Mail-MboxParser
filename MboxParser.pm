@@ -87,7 +87,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.45";
+$VERSION	= "0.46";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -214,18 +214,18 @@ sub init (@) {
 Error: open needs either a filename, a filehande (as glob-ref) or a 
 (scalar/array)-referece variable as first argument.
 EOC
-	}
+    }
 		
-	# we need odd number of arguments
-	if ((@args % 2) == 0) { 
-		croak <<EOC;
+    # we need odd number of arguments
+    if ((@args % 2) == 0) { 
+	croak <<EOC;
 Error: open() can never have an even number of arguments. 
 See 'perldoc Mail::MboxParser' on how to call it.
 EOC
-	}
-	$self->open(@args);     
+    }
+    $self->open(@args);     
 
-	$self;
+    $self;
 }
 
 # ----------------------------------------------------------------
@@ -242,43 +242,43 @@ change the characteristics of a mailbox on the fly.
 =cut
 
 sub open (@) {
-	my ($self, @args) = @_;
+    my ($self, @args) = @_;
 
-	my $source 	= shift @args;
+    my $source 	= shift @args;
 
-	$self->{CONFIG} = { @args };	
+    $self->{CONFIG} = { @args };	
     $self->{CURR_POS} = 0;
-    
+
     my $file_name;
     
-	# supposedly a filename
-	if (! ref $source) {	
-		if (! -f $source) {
-			croak <<EOC;
+    # supposedly a filename
+    if (! ref $source) {	
+	if (! -f $source) {
+	    croak <<EOC;
 Error: The filename you passed to open() does not refer to an existing file
 EOC
-		}
-        my $handle = gensym;
-		open $handle, "<$source" or
-			croak "Error: Could not open $source for reading: $!";
-		$self->{READER} = $handle;
-        $file_name = $source;
 	}
-	
-	# a filehandle
-	elsif (ref $source eq 'GLOB' && $source != \*STDIN) { 
-		$self->{READER} = $source;
-	}
+	my $handle = gensym;
+	open $handle, "<$source" or
+	croak "Error: Could not open $source for reading: $!";
+	$self->{READER} = $handle;
+	$file_name = $source;
+    }
 
-	# else
+    # a filehandle
+    elsif (ref $source eq 'GLOB' && $source != \*STDIN) { 
+	$self->{READER} = $source;
+    }
+
+    # else
     else {
-        (my $fh, $file_name) = tempfile(UNLINK => 1) or croak <<EOC;
+	(my $fh, $file_name) = tempfile(UNLINK => 1) or croak <<EOC;
 Error: Could not create temporary file. This is very weird ($!).
 EOC
-        if 		(ref $source eq 'SCALAR') 	{ print $fh ${$source} }
-        elsif 	(ref $source eq 'ARRAY')  	{ print $fh @{$source} }
-        elsif   ($source == \*STDIN) 	  	{ print $fh <STDIN> }
-        $self->{READER} = $fh;
+	if    (ref $source eq 'SCALAR') 	{ print $fh ${$source} }
+	elsif (ref $source eq 'ARRAY')  	{ print $fh @{$source} }
+	elsif ($source == \*STDIN) 	  	{ print $fh <STDIN> }
+	$self->{READER} = $fh;
     }
 
     # do line-ending stuff
@@ -376,56 +376,54 @@ sub get_messages_new() {
 }
     
 sub get_messages_old() {
-	my $self = shift;
+    my $self = shift;
 
     local $/ = $self->{NL};
-    
-	my ($in_header, $in_body) = (0, 0);
-	my $header;
-	my (@header, @body);
-	my $h = $self->{READER};
 
-	my $got_header;
+    my ($in_header, $in_body) = (0, 0);
+    my $header;
+    my (@header, @body);
+    my $h = $self->{READER};
 
-	my @messages;
+    my $got_header;
 
-	seek $h, 0, 0; 
-	while (<$h>) {
-        
-		# entering header
-        if (!$in_body && /$from_date/) {
-			($in_header, $in_body) = (1, 0);
-			$got_header = 0;
-		}
-		# entering body
-        if ($in_header && /$empty_line/) { 
-			($in_header, $in_body) = (0, 1);
-			$got_header = 1; 
-		}
-		
-		# just before entering next mail-header or running
-		# out of data, store message in Mail-object
-        if ((/$from_date/ || eof) && $got_header) {
-            push @body, $_ if eof; # don't forget last line!!
-			my $m = Mail::MboxParser::Mail->new([ @header ], 
-												[ @body ], 
-												$self->{CONFIG});
-			push @messages, $m;
-			($in_header, $in_body) = (1, 0);
-			undef $header;
-			(@header, @body) = ();
-			$got_header = 0;
-		}
-		if ($_) {
-            push @header, $_ if $in_header && !$got_header; 
-            push @body, $_   if $in_body   &&  $got_header;
-		}		
-	};
-	
-	if (exists $self->{CONFIG}->{decode}) {
-		$Mail::MboxParser::Mail::Config->{decode} = $self->{CONFIG}->{decode};
+    my @messages;
+
+    seek $h, 0, 0; 
+    while (<$h>) {
+
+	# entering header
+	if (!$in_body && /$from_date/) {
+	    ($in_header, $in_body) = (1, 0);
+	    $got_header = 0;
 	}
-	return @messages;
+	# entering body
+	if ($in_header && /$empty_line/) { 
+	    ($in_header, $in_body) = (0, 1);
+	    $got_header = 1; 
+	}
+
+	# just before entering next mail-header or running
+	# out of data, store message in Mail-object
+	if ((/$from_date/ || eof) && $got_header) {
+            push @body, $_ if eof; # don't forget last line!!
+	    my $m = Mail::MboxParser::Mail->new([ @header ], [ @body ], $self->{CONFIG});
+	    push @messages, $m;
+	    ($in_header, $in_body) = (1, 0);
+	    undef $header;
+	    (@header, @body) = ();
+	    $got_header = 0;
+	}
+	if ($_) {
+	    push @header, $_ if $in_header && !$got_header; 
+	    push @body, $_   if $in_body   &&  $got_header;
+	}		
+    }
+	
+    if (exists $self->{CONFIG}->{decode}) {
+	$Mail::MboxParser::Mail::Config->{decode} = $self->{CONFIG}->{decode};
+    }
+    return @messages;
 }
 
 # ----------------------------------------------------------------
@@ -494,7 +492,7 @@ sub next_message_new() {
     $self->reset_last;
     my $p = $self->parser;
 
-    return undef if $p->end_of_file;
+    return undef if ref(\$p) eq 'SCALAR' or $p->end_of_file;
 
     seek $self->{READER}, $self->{CURR_POS}, SEEK_SET;
     my $nl = $self->{NL};
@@ -512,45 +510,43 @@ sub next_message_old() {
     $self->reset_last;
 
     local $/ = $self->{NL};
-    
+
     my $h    = $self->{READER};
 
-	my ($in_header, $in_body) = (0, 0);
-	my $header;
-	my (@header, @body);
+    my ($in_header, $in_body) = (0, 0);
+    my $header;
+    my (@header, @body);
 
-	my $got_header = 0;
-    
+    my $got_header = 0;
+
     seek $h, $self->{CURR_POS}, SEEK_SET;
-    
+
     # we need to force join_string to "" here because
     # this method is also invoked by get_message_new():
     my %newopts = %{ $self->{CONFIG} };
     $newopts{ join_string } = '';
     while (<$h>) { 
 
-        $got_header = 1 if eof($h) || /$empty_line/ and $in_header;
-        
-        if (/$from_date/ || eof $h) {
-            push @body, $_ if eof $h;
-            if (! $got_header) {
-                ($in_header, $in_body) = (1, 0);
-            }
-            else {
-                $self->{CURR_POS} = tell($h) - length;
-                return Mail::MboxParser::Mail->new([ @header ],
-                                                   [ @body ],
-                                                   \%newopts);
-            }
-        }
-        
-        if (/$empty_line/ && $got_header) {
-            ($in_header, $in_body) = (0, 1); 
-            $got_header = 1;
-        }
-        
-        push @header, $_ if $in_header;
-        push @body,   $_ if $in_body; 
+	$got_header = 1 if eof($h) || /$empty_line/ and $in_header;
+
+	if (/$from_date/ || eof $h) {
+	    push @body, $_ if eof $h;
+	    if (! $got_header) {
+		($in_header, $in_body) = (1, 0);
+	    }
+	    else {
+		$self->{CURR_POS} = tell($h) - length;
+		return Mail::MboxParser::Mail->new([ @header ], [ @body ], \%newopts);
+	    }
+	}
+
+	if (/$empty_line/ && $got_header) {
+	    ($in_header, $in_body) = (0, 1); 
+	    $got_header = 1;
+	}
+
+	push @header, $_ if $in_header;
+	push @body,   $_ if $in_body; 
         
     }
 }
@@ -706,7 +702,8 @@ sub get_pos($) {
         if (! exists $self->{MSG_IDX}{$num}) {
             $self->{LAST_ERR} = "$num: No such message";
         }
-        return $self->{MSG_IDX}{$num} }
+        return $self->{MSG_IDX}{$num} 
+    }
     else { return }
 }
 
@@ -725,19 +722,19 @@ counts them and thus it is much quicker and wont eat a lot of memory.
 =cut
 
 sub nmsgs() {
-	my $self = shift;
+    my $self = shift;
 
     local $/ = $self->{NL};
-    
-	if (not $self->{READER}) { return "No mbox opened" }
-	if (not $self->{NMSGS}) {
-		my $h = $self->{READER};
-        seek $h, 0, 0;
-		while (<$h>) {
-			$self->{NMSGS}++ if /$from_date/;
-		}
+
+    if (not $self->{READER}) { return "No mbox opened" }
+    if (not $self->{NMSGS}) {
+	my $h = $self->{READER};
+	seek $h, 0, 0;
+	while (<$h>) {
+	    $self->{NMSGS}++ if /$from_date/;
 	}
-	return $self->{NMSGS} || "0";	
+    }
+    return $self->{NMSGS} || 0;
 }	
 
 # ----------------------------------------------------------------
@@ -951,13 +948,13 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.45.
+This is version 0.46.
 
 =head1 AUTHOR AND COPYRIGHT
 
 Tassilo von Parseval <tassilo.parseval@post.rwth-aachen.de>
 
-Copyright (c)  2001-2002 Tassilo von Parseval. 
+Copyright (c)  2001-2004 Tassilo von Parseval. 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
