@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.42 2001/12/08 06:44:05 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.44 2001/12/09 09:47:12 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -65,10 +65,16 @@ use IO::File;
 use Carp;
 
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.30_2";
+use vars qw($VERSION @EXPORT @ISA $OS);
+$VERSION	= "0.30_3";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
+
+# need this for tell() since Win obviously reports one byte too less
+
+$OS = $^O =~ /Win/ 
+        ? 1
+        : 0;
 
 # ----------------------------------------------------------------
 
@@ -294,7 +300,7 @@ sub next_message() {
     my $self = shift;
     $self->reset_last;
     my $h    = $self->{READER};
-    seek $h, 0, 0;
+    #seek $h, 0, 0;
 
 	my ($in_header, $in_body) = (0, 0);
 	my ($header, $body);
@@ -304,7 +310,7 @@ sub next_message() {
 	my $from_date  = qr/^From (.*)\d{4}\015?$/;
 	my $empty_line = qr/^\015?$/;
     
-    seek $h, $self->{CURR_POS}, 0 if $self->{CURR_POS};
+    seek $h, $self->{CURR_POS}, 0;
     
     while (<$h>) { 
         
@@ -313,7 +319,7 @@ sub next_message() {
                 ($in_header, $in_body) = (1, 0);
             }
             else {
-                $self->{CURR_POS} = tell($h) - length ;
+                $self->{CURR_POS} = (tell($h) - length) - $OS ;
                 return Mail::MboxParser::Mail->new(join ('', @header),
                                                    join ('', @body),
                                                    $self->{CONFIG});
@@ -424,7 +430,8 @@ sub make_index() {
     
     my $c = 0;
     while (<$h>) {
-        $self->{MSG_IDX}->{$c} = tell ($h) - length, $c++ if /$from_date/;
+        $self->{MSG_IDX}->{$c} = (tell ($h) - length) - $OS, $c++ 
+            if /$from_date/;
     }
     seek $h, 0, 0;
 } 

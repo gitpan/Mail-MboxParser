@@ -1,5 +1,18 @@
-# $Id: Changelog,v 1.28 2001/12/08 06:40:10 parkerpine Exp $
+# $Id: Changelog,v 1.30 2001/12/09 09:47:39 parkerpine Exp $
 
+v0.30_3 (Sun Dec  9 10:41:26 CET 2001)
+
+    -----------------------
+    THIS IS A BETA RELEASE!
+    -----------------------
+    
+    + bugifx in MboxParser.pm:
+      under Win each second mail was skipped
+      (Marco Trudel <mtrudel@viviance.com>)
+    + removed silly debug-print in Mail.pm
+    + minor fixes of the PODs in Mail.pm
+      (duplicate =back directive)
+    
 v0.30_1 (Mon Dec  3 12:04:00 CET 2001)
 
       -----------------------
@@ -28,7 +41,7 @@ v0.30_1 (Mon Dec  3 12:04:00 CET 2001)
       (suggested by Marco Trudel)
 
     + some fixes:
-        - long-header lines containedwrong number of whitespaces
+        - long-header lines contained wrong number of whitespaces
           when decoded, fixed
         - fix of nmsgs when mailbox has already been traversed
           (filehandle had to be rewinded)

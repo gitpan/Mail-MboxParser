@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.40 2001/12/08 06:44:05 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.42 2001/12/09 10:31:09 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -39,7 +39,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD);
-$VERSION    = "0.24";
+$VERSION    = "0.25";
 @EXPORT     = qw();
 
 my $Parser = new MIME::Parser; $Parser->output_to_core(1);
@@ -234,7 +234,7 @@ Returns a hash-ref with the two fields 'name' and 'email'. Returns undef if empt
 =back
 
 =cut
-    
+
 sub from() {
 	my $self = shift;
 	$self->reset_last;
@@ -513,7 +513,6 @@ EOW
 			    return;
             }
             else {
-                print "found cont-disp\n";
                 my ($type, $filename) = split /;\s*/, 
                     $self->get_entities($num)->head->get('content-disposition');
                 if ($type ne 'attachment') {
@@ -611,10 +610,6 @@ EOW
 	$self->{LAST_ERR} = "Found no attachment at all" if @files == 0;
 	return @files;
 }
-
-=back
-
-=cut
 
 # ----------------------------------------------------------------
 
