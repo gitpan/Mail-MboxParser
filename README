@@ -1,0 +1,52 @@
+$Id: README,v 1.2 2001/07/04 07:02:05 uid48251 Exp $
+
+Mail::MboxParser is a module for working with UNIX-flavoured mailboxes. In essence, it is not at all as feature-rich as Mail::Box or Mail::Cclient which has not been intended anyway.
+Its purpose is to _easily_ extract messages from a mailbox with _simple_ access to header fields, body and MIME-parts. It is for those people who find the above two module-sets too confusing. See the list of provided methods below.
+It is particularly easy to deal with any kind of attached files. See the supplied extract_attachements.pl script for an example. 
+
+Prerequisites:
+--------------
+Mail::MboxParser depends on MIME::Tools (probably >= 5.0).
+
+Installation:
+-------------
+Un'tar xfz' the module and 'cd' into the new directory Mail-MboxParser-$VERSION.
+
+Then install:
+	perl Makefile.PL
+	make
+	make install
+
+Tests aren't yet included in the package.
+
+Methods:
+--------
+Mail::MboxParser
+	::new (of course)
+	::open
+	::get_messages (all on array)
+	::nmsgs (no of messages in mailbox)
+	
+Mail::MboxParser::Mail::
+	::new (usually internally called by Mail::MboxParser::get_messages)
+	::header (hash-ref with all header-fields)
+	::body
+	::from (hash-ref)
+	::id
+	::num_entities (no of MIME-entities)
+	::get_entities (array or scalar if called with a number)
+	::get_entity_body (body of the n-th entity as single string)
+	::store_attachement 
+	::store_all_attachements (just save all saveable attachements to filehandle)
+
+Have a look into the eg-directory of the package for some (or one) example(s).
+
+Contact:
+--------
+Bugs, feature requests, questions, comments etc. should be directly mailed to me.
+
+Tassilo v. Parseval
+<tassilo.parseval@post.rwth-aachen.de>
+
+	
+
