@@ -87,7 +87,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.48";
+$VERSION	= "0.49";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -131,6 +131,12 @@ the default if none given.
               |            | any is encoded
               |------------|-------------------------------
               | 'ALL'      | decode any data
+    ==========|============|===============================
+    uudecode  | 1          | enable extraction of uuencoded
+    (0)       |            | attachments in MIME::Parser
+              |------------|-------------------------------
+              | 0          | uuencoded attachments are
+              |            | treated as plain body text
     ==========|============|===============================
     newline   | 'UNIX'     | UNIXish line-endings 
     (AUTO)    |            | ("\n" aka \012)
@@ -326,11 +332,11 @@ EOC
     } 
 
     # do line-ending stuff
-    if (! exists $self->{CONFIG}->{NL}) {
-        $self->{CONFIG}->{NL} = 'AUTO';
+    if (! exists $self->{CONFIG}->{newline}) {
+        $self->{CONFIG}->{newline} = 'AUTO';
     }
     
-    my $nl = $self->{CONFIG}->{NL};
+    my $nl = $self->{CONFIG}->{newline};
     if    ($nl eq 'UNIX') { $self->{NL} = "\012" }
     elsif ($nl eq 'WIN')  { $self->{NL} = "\015\012" }
     elsif ($nl eq 'AUTO') { $self->{NL} = $self->_detect_nl }
@@ -957,7 +963,7 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.48.
+This is version 0.49.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.41";
+$VERSION    = "0.42";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -97,6 +97,11 @@ sub init (@) {
     $self->{BODY}        = ref $body ? $body : [ split /$NL/, $body ];
     $self->{TOP_ENTITY}  = 0;
     $self->{ARGS}        = $conf;
+
+    if (! $self->{ARGS}->{uudecode} ) {
+	# set default for 'uudecode' option
+	$self->{ARGS}->{uudecode} = 0;
+    }
 
     # make sure line-endings are ok if called directly
     if (caller(1) ne 'Mail::MboxParser') {
@@ -506,6 +511,7 @@ sub get_entities(@) {
 	if (! defined $Parser) {
 	    eval { require MIME::Parser; };
 	    $Parser = new MIME::Parser; $Parser->output_to_core(1);
+	    $Parser->extract_uuencode($self->{ARGS}->{uudecode});
 	}
 
 	my $data = $self->as_string;
@@ -1006,6 +1012,7 @@ sub AUTOLOAD {
 			eval { require MIME::Parser };
 			$Parser = new MIME::Parser; 
 			$Parser->output_to_core(1);
+			$Parser->extract_uuencode($self->{ARGS}->{uudecode});
 		    }
 		    my $js = $self->{ARGS}->{join_string};
 		    $self->{TOP_ENTITY} = $Parser->parse_data(join $js, @{$self->{HEADER}}, @{$self->{BODY}})
@@ -1065,7 +1072,7 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.48.
+This is version 0.49.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -1,3 +1,9 @@
+v0.49 (Wed Aug 11 09:43:22 CEST 2004)
+
+    + Dealing with uuencoded MIME parts added + 
+      a slight internal clean-up
+      (patch by Ed Huott <ed AT supergeek DOT com>)
+
 v0.48 (Wed May 19 07:36:34 CEST 2004)
 
     + The previous patch was only a partial solution. If an
