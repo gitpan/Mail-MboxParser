@@ -1,5 +1,20 @@
 # $Id: Changelog,v 1.37 2002/03/01 10:10:27 parkerpine Exp $
 
+v0.33 (Thu Jun 20 07:26:25 CEST 2002)
+
+    This is a bug-fix only release:
+    + multiple occurances of a header-field were
+      incorrectly handled: only the last occurance
+      was returned, now you get an array_ref
+    + localizing of file-handles
+    + fixed $msg->as_string (broken in 0.32)
+    + store_attachment() and store_all_attachments()
+      fixed to work without the 'store_only' argument
+    + list/scalar context issue fixed in get_entities(),
+      that could break $msg->body under circumstances
+    + fixed a wrong prototype in Body.pm to make 
+      Perl 5.8.0 happy
+
 v0.32 (Fri Mar  1 10:34:46 CET 2002)
 
     + fixed Mail::MboxParser::Mail::get_field() which was broken

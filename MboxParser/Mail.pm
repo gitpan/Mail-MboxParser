@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.30";
+$VERSION    = "0.31";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -62,11 +62,9 @@ sub init (@) {
 	my ($self, @args) = @_;
 	my ($header, $body, $conf) = @args;
 	
-	$self->{HEADER}			= $header;
+	$self->{HEADER}			= ref $header ? $header : [ split /$NL/, $header ];
 	$self->{HEADER_HASH}	= \&split_header;
-	$self->{BODY}			= ref $body 
-                                ? @{$body}
-                                : $body;
+	$self->{BODY}			= ref $body ? $body : [ split /$NL/, $body ];
 	$self->{TOP_ENTITY}		= 0;
 	$self->{ARGS}			= $conf;
 	$self;
@@ -79,6 +77,13 @@ sub init (@) {
 =item B<header>
 
 Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so $header{Subject} has to be written as $header{subject}.
+
+If a header-field occurs more than once in the header, the value of the key is an array_ref. Example:
+
+    my $field = $msg->header->{field};
+    print $field->[0]; # first occurance of 'field'
+    print $field->[1]; # second one
+    ...
 
 =back
 
@@ -182,9 +187,7 @@ sub body(;$) {
 		if ($bound = $ent->head->get('content-type')) {
 			$bound =~ /boundary="(.*)"/; $bound = $1;
 		}
-		return Mail::MboxParser::Mail::Body->new(	$ent, 
-													$bound, 
-													$self->{ARGS});
+		return Mail::MboxParser::Mail::Body->new($ent, $bound, $self->{ARGS});
 	}
 	
 	# else
@@ -195,7 +198,7 @@ sub body(;$) {
 		?	Mail::MboxParser::Mail::Body->new(	$self->{TOP_ENTITY}, 
 												$bound,
 												$self->{ARGS})
-		:	Mail::MboxParser::Mail::Body->new(	$self->get_entities(0), 
+		:	Mail::MboxParser::Mail::Body->new(	scalar $self->get_entities(0), 
 												$bound,
 												$self->{ARGS});
 }
@@ -435,10 +438,7 @@ sub get_entities(@) {
             $Parser = new MIME::Parser; $Parser->output_to_core(1);
         }
 
-        my $data = join "", ref $self->{HEADER}
-                                ? @{$self->{HEADER}}
-                                : $self->{HEADER}, 
-                                $self->{BODY};
+        my $data = join "", @{ $self->{HEADER} }, @{ $self->{BODY} };
 		$self->{TOP_ENTITY} = $Parser->parse_data($data);
 	}
 	
@@ -647,7 +647,8 @@ EOW
             $file = MIME::Words::decode_mimewords($file) if ! $@;
         }
     
-        return if $file !~ /$args{store_only}/;
+        return if defined $args{store_only} and 
+                  $file !~ /$args{store_only}/;
         
 		if (open ATT, ">$path/$file") {
 			$self->store_entity_body($num, handle => \*ATT);
@@ -757,7 +758,8 @@ sub get_attachments(;$) {
     
     for my $num (0 .. $self->num_entities - 1) {
 		my $file = eval { 
-			$self->get_entities($num)->head->recommended_filename; };
+			$self->get_entities($num)->head->recommended_filename; 
+        };
 		$self->{LAST_LOG} = $@;
 		if (! $file) {
             # test for Content-Disposition
@@ -803,7 +805,8 @@ sub get_attachments(;$) {
     
 sub as_string {
 	my $self = shift;
-	return $self->{HEADER}.$self->{BODY};
+    
+	return join "", @{ $self->{HEADER} }, @{ $self->{BODY} };
 }
 
 sub _recipients($) {
@@ -836,9 +839,7 @@ sub _recipients($) {
 sub split_header {
     local $/ = $NL;
 	my ($self, $header, $decode) = @_;
-	my @headerlines = ref $header 
-                        ? @{$header}
-                        : split /$NL/, $header;
+	my @headerlines = @{ $header };
 
 	my @header;
     chomp @headerlines if ref $header;
@@ -861,7 +862,17 @@ sub split_header {
                 use MIME::Words qw(:all);
                 $value = decode_mimewords($value); 
             }
-			$header{lc($key)} = $value;
+
+            # if such a field is already there => make array-ref
+            if (exists $header{lc($key)}) {
+                my $elem = $header{lc($key)};
+                my @data = ref $elem ? @$elem : $elem;
+                push @data, $value;
+                $header{lc($key)} = [ @data ];
+            }
+            else {
+                $header{lc($key)} = $value;
+            }
 		}
 	}
 	return  \%header;
@@ -897,10 +908,8 @@ sub AUTOLOAD {
                         $Parser->output_to_core(1);
                     }
                     $self->{TOP_ENTITY} = 
-                        $Parser->parse_data(join "", ref $self->{HEADER}
-                                                        ? @{$self->{HEADER}}
-                                                        : $self->{HEADER},
-                                                    $self->{BODY})
+                        $Parser->parse_data(join "", @{$self->{HEADER}},
+                                                     @{$self->{BODY}})
                             if ref $self->{TOP_ENTITY} ne 'MIME::Entity';
                     return $self->{TOP_ENTITY}->$call(@args);
                 }
@@ -953,7 +962,7 @@ Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fa
 
 =head1 VERSION
 
-This is version 0.31.
+This is version 0.33.
 
 =head1 AUTHOR AND COPYRIGHT
 

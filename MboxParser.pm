@@ -67,11 +67,12 @@ More to that, see the relevant manpages of Mail::MboxParser::Mail, Mail::MboxPar
 use strict;
 use Mail::MboxParser::Mail;
 use IO::File;
+use Symbol;
 use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.32";
+$VERSION	= "0.33";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -174,7 +175,7 @@ sub open (@) {
 	my $source 	= shift @args;
 	$self->{CONFIG} = { @args };	
     $self->{CURR_POS} = 0;
-	
+    	
 	# supposedly a filename
 	if (! ref $source) {	
 		if (! -f $source) {
@@ -182,9 +183,10 @@ sub open (@) {
 Error: The filename you passed to open() does not refer to an existing file
 EOC
 		}
-		open MBOX, "<$source" or
+        my $handle = gensym;
+		open $handle, "<$source" or
 			croak "Error: Could not open $source for reading: $!";
-		$self->{READER} = \*MBOX;
+		$self->{READER} = $handle;
 	}
 	
 	# a filehandle
@@ -248,7 +250,7 @@ sub get_messages() {
 
 	seek $h, 0, 0; 
 	while (<$h>) {
-		
+
 		# entering header
         if (!$in_body && /$from_date/) {
 			($in_header, $in_body) = (1, 0);
@@ -265,7 +267,7 @@ sub get_messages() {
         if ((/$from_date/ || eof) && $got_header) {
             push @body, $_ if eof; # don't forget last line!!
 			my $m = Mail::MboxParser::Mail->new([ @header ], 
-												join('', @body), 
+												[ @body ], 
 												$self->{CONFIG});
 			push @messages, $m;
 			($in_header, $in_body) = (1, 0);
@@ -349,7 +351,7 @@ sub next_message() {
     seek $h, $self->{CURR_POS}, 0;
     
     while (<$h>) { 
-        
+
         if (/$from_date/ || eof $h) {
             if (! $got_header) {
                 ($in_header, $in_body) = (1, 0);
@@ -357,7 +359,7 @@ sub next_message() {
             else {
                 $self->{CURR_POS} = tell($h) - length;
                 return Mail::MboxParser::Mail->new([ @header ],
-                                                   join ('', @body),
+                                                   [ @body ],
                                                    $self->{CONFIG});
             }
         }
@@ -703,7 +705,7 @@ Kenn Frankel (kenn@kenn.cc) kindly patched the broken split-header routine and a
 
 =head1 VERSION
 
-This is version 0.31.
+This is version 0.33.
 
 =head1 AUTHOR AND COPYRIGHT
 

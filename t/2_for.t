@@ -6,7 +6,6 @@ use strict;
 
 use lib '../..';
 use Mail::MboxParser;
-
 my $src = File::Spec->catfile('t', 'testbox');
 
 BEGIN { plan tests => 28 };
