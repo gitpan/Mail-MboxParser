@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.29 2001/08/28 10:01:25 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.30 2001/09/01 06:39:40 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -18,7 +18,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.16";
+$VERSION	= "0.17";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;
@@ -133,9 +133,15 @@ This module attempts to provide a simplified access to standard UNIX-mailboxes. 
 
 Mail::MboxParser has not been derived from Mail::Box and thus isn't acquainted with it in any way. It, however, incorporates some invaluable hints by the author of Mail::Box, Mark Overmeer.
 
+B<WARNING:> 
+
+The interface will change in one of the next releases (probably 0.20). Some obsolete methods may disappear and methods will use named parameters in key/value-pairs.
+
 =head1 METHODS
 
 See also the section ERROR-HANDLING much further below.
+
+----
 
 The below methods refer to Mail::MboxParser-objects.
 
@@ -163,6 +169,8 @@ Returns the number of messages in a mailbox. You could naturally also call get_m
 
 =back
 
+----
+
 The below methods refer to Mail::MboxParser::Mail-objects returned by get_messages.
 
 =over 4
@@ -175,7 +183,9 @@ This is usually not called directly but instead by $mb->get_messages. You could 
 
 Returns the mail-header as a hash-ref with header-fields as keys. All keys are turned to lower-case, so $header{Subject} has to be written as $header{subject}.
 
-=item B<body[(n)]>
+=item B<body>
+
+=item B<body(n)>
 
 Returns a Mail::MboxParser::Mail::Body object. For methods upon that see further below. When called with the argument n, the n-th body of the message is retrieved. That is, the body of the n-th entity.
 
@@ -216,7 +226,9 @@ Returns the message-id of a message cutting off the leading and trailing '<' and
 
 Returns the number of MIME-entities. That is, the number of sub-entitities actually. If 0 is returned and you think this is wrong, check $mail->log.
 
-=item B<get_entitities([n])>
+=item B<get_entities>
+
+=item B<get_entities(n)>
 
 Either returns an array of all MIME::Entity objects or one particular if called with a number. If no entity whatsoever could be found, an empty list is returned.
 
@@ -239,7 +251,11 @@ and could be shortened to this:
 
 It returns a true value on success and undef on failure. In this case, examine the value of $mail->error since the entity you specified with 'n' might not exist.
 
-=item B<store_attachement(n, path, [coderef [,args]])>
+=item B<store_attachement(n, path)>
+
+=item B<store_attachement(n, path, coderef)>
+
+=item B<store_attachement(n, path, coderef, args)>
 
 It is really just a call to store_entity_body but it will take care that the n-th entity really is a saveable attachement. That is, it wont save anything with a MIME-type of, say, text/html or so. 
 
@@ -260,7 +276,11 @@ If 'path' does not exist, it will try to create the directory for you.
 
 Returns the filename under which the attachement has been saved. undef is returned in case the entity did not contain a saveable attachement, there was no such entity at all or there was something wrong with the 'path' you specified. Check $mail->error to find out which of these possibilities appliy.
 
-=item B<store_all_attachements(path, [coderef [,args]])>
+=item B<store_all_attachements(path)>
+
+=item B<store_all_attachements(path, coderef)>
+
+=item B<store_all_attachements(path, coderef args)>
 
 Walks through an entire mail and stores all apparent attachements to 'path'. See the supplied store_att.pl script in the eg-directory of the package to see a useful example.
 
@@ -276,6 +296,8 @@ Sorry, no documentation on that yet before this is properly implemented. You can
 
 =back
 
+----
+
 Methods that apply to Mail::MboxParser::Mail-objects come here:
 
 =over 4
@@ -284,13 +306,46 @@ Methods that apply to Mail::MboxParser::Mail-objects come here:
 
 Returns the signature of a message as an array of lines. Trailing newlines are already removed.
 
-=item B<extract_urls [(unique => 0|1)]>
+=item B<extract_urls>
+
+=item B<extract_urls (unique =E<gt> 1)>
 
 Returns an array of hash-refs. Each hash-ref has two fields: 'url' and 'context' where context is the line in which the 'url' appeared.
 
 When calling it like $mail->extract_urls(unique => 1), duplicate URLs will be filtered out regardless of the 'context'. That's useful if you just want a list of all URLs that can be found in your mails.
 
-=cut
+=item B<quotes>
+
+Returns a hash-ref of array-refs where the hash-keys are the several levels of quotation. Each array-element contains the paragraphs of this quotation-level as one string. Example:
+
+	my $quotes = $msg->body($msg->find_body)->quotes;
+	print $quotes->{1}->[0], "\n";
+	print $quotes->{0}->[0], "\n";
+
+This should print the first paragraph of the mail-body that has been quoted once and below that the paragraph that supposedly is the reply to this paragraph. Perhaps thus:
+
+	> I had been trying to work with the CGI module 
+	> but I didn't yet fully understand it.
+
+	Ah, it is tricky. Have you read the CGI-FAQ that 
+	comes with the module?
+
+Mark that empty lines will not be ignored and are part of the lines contained in the array of $quotes->{0}.
+
+So below is a little code-snippet that should, in most cases, restore the first 5 paragraphs (containing quote-level 0 and 1) of an email:
+
+	for (0 .. 5) {
+		print $quotes->{0}->[$_];
+		print $quotes->{1}->[$_];
+	}
+
+Since quotes() considers an empty line between two quotes paragraphs as a paragraph in $quotes->{0}, the paragraphs with one quote and those with zero are balanced. That means: 
+
+scalar @{$quotes->{0}} - DIFF == scalar @{$quotes->{1}} where DIFF is element of {-1, 0, 1}.
+
+=back
+
+----
 
 Common methods for both mailbox- and mail-objects come below. These are about error-handling so you should read the section ERROR-HANDLING as well.
 
@@ -308,35 +363,37 @@ Sort of internal weirdnesses are recorded here. Again only the last event is sav
 
 =head1 FIELDS
 
+Mark that this section will sooner or later vanish. From v0.20 on there'll no longer be any need for knowing about the internal structure of the objects.
+
 Mail::MboxParser basically is a hash-ref:
 
 =over 4
 
-=item B<$mb->{READER}>
+=item B<$mb-E<gt>{READER}>
 
 This is the filehandle from which is read internally. As to yet, it is read-only so you can't use it for writing. This may be changed later.
 
-=item B<$mb->{NMSGS}>
+=item B<$mb-E<gt>{NMSGS}>
 
 Having called nmsgs once this field contains the number of messages in the mailbox. Thus there is no need for calling the method twice which speeds up matters a little.
 
 Mail::MboxParser::Mail consists of the following fields:
 
-=item B<$mail->{RAW}>
+=item B<$mail-E<gt>{RAW}>
 
 This field no longer exists in order to save memory. Instead, do something like
 
 	$entire_message = $mail->{HEADER}.$mail->{BODY};
 
-=item B<$mail->{HEADER}>
+=item B<$mail-E<gt>{HEADER}>
 
 Well, just the header of the message as a string.
 
-=item B<$mail->{BODY}>
+=item B<$mail-E<gt>{BODY}>
 
 You guess it.
 
-=item B<$mail->{TOP_ENTITY}>
+=item B<$mail-E<gt>{TOP_ENTITY}>
 
 The top-level MIME::Entity of a message. Technically speaking, the message itself from the perspective of MIME::Entity.
 

@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Body.pm,v 1.5 2001/08/28 12:15:11 parkerpine Exp $
+# Version: $Id: Body.pm,v 1.7 2001/09/01 06:40:13 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Body;
 
@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.02";
+$VERSION 	= "0.03";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 $^W++;
@@ -97,6 +97,51 @@ else {
 	return @uris;
 	}
 }
+
+sub quotes() {
+	my $self = shift;
+	$self->reset_last;
+	
+	my %ret;
+	my $q 		= 0; # num of '>'
+	my $in 		= 0; # being inside a quote
+	my $last 	= 0; # num of quotes in last line
+	
+	for (@{$self->{CONTENT}}) {
+	
+		# count quotation signs
+		$q = 0;
+		my $t = "a" x length;
+		for my $c (unpack $t, $_) {
+			if ($c eq '>') 				{ $q++ }
+			if ($c ne '>' && $c ne ' ') { last }
+		}
+		
+		# first: create a hash-element for level $q
+		if (! exists $ret{$q}) {
+			$ret{$q}= [];
+		}
+		
+		# if last line had the same level as current one:
+		# attach the line to the last one
+		if ($last == $q) {
+			
+			if (@{$ret{$q}} == 0) { $ret{$q}->[$q] .= $_ }
+			else { $ret{$q}->[-1] .= $_ }
+			
+		}
+		
+		# if not:
+		# create a new array-element in the appropriate hash-element
+		else { push @{$ret{$q}}, $_ }
+		
+		$last = $q;
+		
+	}
+	return \%ret;
+}
+
+
 1;
 
 __END__
@@ -107,7 +152,7 @@ Mail::MboxParser::Mail::Body - rudimentary mail-body object
 
 =head1 SYNOPSIS
 
-See L<Mail::MboxParser> for examples on usage.
+See L<Mail::MboxParser> for examples on usage and description of the provided methods.
 
 =head1 DESCRIPTION
 
