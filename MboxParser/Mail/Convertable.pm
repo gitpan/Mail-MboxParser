@@ -118,7 +118,7 @@ For more details, see L<Mail::Mailer>
 
 =head1 VERSION
 
-This is version 0.33.
+This is version 0.34.
 
 =head1 AUTHOR AND COPYRIGHT
 

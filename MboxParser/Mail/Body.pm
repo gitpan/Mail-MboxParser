@@ -16,7 +16,7 @@ use Carp;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
-$VERSION 	= "0.07";
+$VERSION 	= "0.08";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 
@@ -35,8 +35,9 @@ sub init(@) {
 }
 
 sub as_string() {	
-	my $self = shift;
+	my ($self, %args) = @_;
     $self->reset_last;
+    return join "", $self->as_lines(strip_sig => 1) if $args{strip_sig};
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
 	if ($decode eq 'BODY' || $decode eq 'ALL') {
 		use MIME::QuotedPrint;
@@ -47,14 +48,22 @@ sub as_string() {
 	
 
 sub as_lines() { 
-	my $self = shift;
+	my ($self, %args) = @_;
     $self->reset_last;
     my $decode = $self->{ARGS}->{decode} || 'NEVER';
 	if ($decode eq 'BODY' || $decode eq 'ALL') {
 		use MIME::QuotedPrint; 
 		return map { decode_qp($_) } @{$self->{CONTENT}};
 	}
-	return @{$self->{CONTENT}};
+
+	return @{$self->{CONTENT}} if ! $args{strip_sig};
+    
+    my @lines;
+    for (@{ $self->{CONTENT} }) {
+        last if /^--\040?[\r\n]?$/;
+        push @lines, $_;
+    }
+    return @lines;
 }
 					   
 	
@@ -77,7 +86,7 @@ sub signature() {
 		elsif (not $seperator) { $seperator = 1; next }
         
 	    chomp;	
-
+        
 		# we are inside signature: is line perhaps MIME-boundary?
 		last if $bound && /^--\Q$bound\E/ && $seperator;
 
@@ -214,13 +223,17 @@ Since emails can have multiple MIME-parts and each of these parts has a body it 
 
 =over 4
 
-=item B<as_string>
+=item B<as_string ([strip_sig =E<gt> 1])>
 
 Returns the textual representation of the body as one string. Decoding takes place when the mailbox has been opened using the decode => 'BODY' | 'ALL' option.
 
-=item B<as_lines>
+If 'strip_sig' is set to a true value, the signature is stripped from the string.
+
+=item B<as_lines ([strip_sig =E<gt> 1])>
 
 Sames as as_string() just that you get an array of lines.
+
+If 'strip_sig' is set to a true value, the signature is stripped from the string.
 
 =item B<signature>
 
@@ -273,7 +286,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.33.
+This is version 0.34.
 
 =head1 AUTHOR AND COPYRIGHT
 

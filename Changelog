@@ -1,5 +1,14 @@
 # $Id: Changelog,v 1.37 2002/03/01 10:10:27 parkerpine Exp $
 
+v0.34 (Sun Aug 11 16:25:53 CEST 2002)
+
+    + new option to strip signature on output
+      (implicitely suggested by David Bryson)
+    + on unfolding of continuation header-lines,
+      whitespaces disappeared
+      (fix by Nathan Uno (<Nathan@unos.net>)
+    + added MIME::QuotedPrint to prerequisites
+    
 v0.33 (Thu Jun 20 07:26:25 CEST 2002)
 
     This is a bug-fix only release:

@@ -38,7 +38,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.31";
+$VERSION    = "0.32";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -835,7 +835,8 @@ sub _recipients($) {
 	return @rec_line;
 }
 
-# patch provided by Kenn Frankel
+# patch provided            by Kenn Frankel
+# additional corrections    by Nathan Uno
 sub split_header {
     local $/ = $NL;
 	my ($self, $header, $decode) = @_;
@@ -844,8 +845,9 @@ sub split_header {
 	my @header;
     chomp @headerlines if ref $header;
  	foreach my $bit (@headerlines) {
-		if ($bit =~ s/^\s//) { $header[-1] .= $bit }
-		else 				 { push @header, $bit }
+        $bit =~ s/\s+$//;       # discard trailing whitespace
+		if ($bit =~ s/^\s+/ /)  { $header[-1] .= $bit }
+		else 				    { push @header, $bit }
 	}
 											   
 	my ($key, $value);
@@ -962,7 +964,7 @@ Mail::MboxParser::Mail overloads the " " operator. Overloading operators is a fa
 
 =head1 VERSION
 
-This is version 0.33.
+This is version 0.34.
 
 =head1 AUTHOR AND COPYRIGHT
 
