@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.13 2001/07/27 18:32:46 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.14 2001/07/28 07:50:45 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.05";
+$VERSION	= "0.06";
 @EXPORT		= qw();
 $^W++;
 
@@ -45,7 +45,6 @@ sub open {
 	open MBOX, "<$file"
 		or die "Error: Could not open $file for reading: $!";
 	$self->{READER} = \*MBOX;
-	return $self;
 }
 
 sub get_messages {
@@ -59,6 +58,8 @@ sub get_messages {
 	my $got_header;
 	my $from_date  = qr(^From (.*)\d{4}\n$);
 	my $empty_line = qr(^\n$);
+
+	seek $h, 0, 0;
 	while (<$h>) {
 		# entering header
 		if (not $in_body and /$from_date/) {

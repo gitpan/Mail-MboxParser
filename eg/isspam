@@ -2,7 +2,7 @@
 # $Id: isspam,v 1.1 2001/07/27 18:27:42 parkerpine Exp $
 
 use strict;
-#use lib "../../";
+use lib "../../";
 use Mail::MboxParser;
 use Getopt::Long;
 

@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.13 2001/07/27 18:33:18 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.14 2001/07/28 07:52:07 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -15,7 +15,7 @@ use MIME::Parser;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION    = "0.05";
+$VERSION    = "0.06";
 @EXPORT     = qw();
 $^W++;
 
@@ -26,14 +26,23 @@ sub new {
 
 	my ($header, $body) = @_;
 	my %header = _split_header($header);
-	my $p = new MIME::Parser;
-	$p->output_to_core(1);	
 
 	$self->{RAW}			= $header.$body;
 	$self->{HEADER} 		= $header;
 	$self->{HEADER_HASH}	= {%header};
 	$self->{BODY}			= $body;
-	$self->{ENTITY}			= $p->parse_data($self->{RAW});
+	$self->{MIME_PARSED}    = 0;
+	$self->{TOP_ENTITY}		= 0;
+	$self->{ENTITY}			= 
+		sub { 
+			if (not $self->{MIME_PARSED}) {
+				my $p = new MIME::Parser;
+				$p->output_to_core(1);
+				$self->{MIME_PARSED} = 1;
+				$self->{TOP_ENTITY} = $p->parse_data($self->{RAW});
+			}
+			else { 	$self->{TOP_ENTITY} }
+		};
 
 	bless ($self, $class);
 	return $self;
@@ -73,13 +82,13 @@ sub id {
 
 sub num_entities {
 	my $self = shift;
-	return (my $n = $self->{ENTITY}->parts);
+	return (my $n = $self->{ENTITY}->()->parts);
 }
 
 sub get_entities {
 	my $self = shift;
 	my $num  = shift;
-	return $self->{ENTITY}->parts($num);
+	return $self->{ENTITY}->()->parts($num);
 }
 
 sub get_entity_body {
@@ -128,7 +137,7 @@ sub store_all_attachements {
 sub _split_header {
 	my $header = shift;
 	my @header = split /\n/, $header;
-	my ($key, $value, @r);
+	my ($key, $value);
 	my %header;
 	for (@header) {
 		unless (/^Received:\s/ or not /: /) {

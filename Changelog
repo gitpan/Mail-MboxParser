@@ -1,4 +1,10 @@
-# $Id: Changelog,v 1.6 2001/07/27 18:31:37 parkerpine Exp $
+# $Id: Changelog,v 1.7 2001/07/28 07:49:57 parkerpine Exp $
+
+v0.06 (Sat Jul 28 09:46:35 CEST 2001):
+	+ on-demand parsing of entities by using closures
+	  -> performance-gain of at least 900%
+	+ rewinding of mailbox-filehandle, 
+	  so a second call to get_messages will work
 
 v0.05 (Fri Jul 27 20:28:04 CEST 2001):
 	+ rework of the pattern-matching,

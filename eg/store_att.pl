@@ -2,6 +2,7 @@
 # $Id$
 
 use strict;
+#use lib "../../";
 use Mail::MboxParser;
 
 my $Dir = shift;
