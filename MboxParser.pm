@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.28 2001/08/27 06:33:22 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.29 2001/08/28 10:01:25 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -18,7 +18,7 @@ use Carp;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.15";
+$VERSION	= "0.16";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 $^W++;

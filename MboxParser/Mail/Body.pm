@@ -5,7 +5,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Body.pm,v 1.2 2001/08/27 06:29:53 parkerpine Exp $
+# Version: $Id: Body.pm,v 1.5 2001/08/28 12:15:11 parkerpine Exp $
 
 package Mail::MboxParser::Mail::Body;
 
@@ -15,11 +15,17 @@ use Carp;
 
 use strict;
 use base qw(Exporter);
-use vars qw($VERSION @EXPORT @ISA $AUTOLOAD);
-$VERSION 	= "0.01";
+use vars qw($VERSION @EXPORT @ISA $AUTOLOAD $_HAVE_NOT_URI_FIND);
+$VERSION 	= "0.02";
 @EXPORT  	= qw();
 @ISA	 	= qw(Mail::MboxParser::Base Mail::MboxParser::Mail);
 $^W++;
+
+
+BEGIN { 
+	eval { require URI::Find; };
+	if ($@) 	{ $_HAVE_NOT_URI_FIND = 1 }
+}
 
 sub init(@) {
 	my ($self, $args) 	= @_;
@@ -64,20 +70,18 @@ sub extract_urls(@_) {
 	
 	$args{unique} = 0 if not exists $args{unique};
 
-	eval { require URI::Find; };
-	if ($@) {
+	if ($_HAVE_NOT_URI_FIND) {
 		carp <<EOW;
 You need the URI::Find module in order to use extract_urls.
 EOW
 		return;
 	}
-	
-	use URI::Find;
+else { 
 	my @uris; my %seen;
 	
 	for my $line (@{$self->{CONTENT}}) {
 		chomp $line;
-		find_uris($line, sub {
+		URI::Find::find_uris($line, sub {
 							my (undef, $url) = @_;
 							$line =~ s/^\s+|\s+$//;
 							if (not $seen{$url}) {
@@ -91,6 +95,7 @@ EOW
 	$self->{LAST_ERR} = "No URLs found" if @uris == 0;
 	
 	return @uris;
+	}
 }
 1;
 

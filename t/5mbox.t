@@ -17,7 +17,15 @@ my $msg = $a[7];
 
 ok(defined $mb);
 ok($msg->body($msg->find_body)->signature == 6);
-ok(($msg->body($msg->find_body)->extract_urls)[1]->{url} eq 
-	'http://Mark.Overmeer.net');
+
+eval { require URI::Find; };
+if ($@) {
+	skip("Skipped: URI::Found not installed", 1)
+}
+else {
+	ok(($msg->body($msg->find_body)->extract_urls)[1]->{url} eq
+				'http://Mark.Overmeer.net');
+}
+
 ok($msg->num_entities == 3);
 

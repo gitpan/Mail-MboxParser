@@ -1,4 +1,7 @@
-# $Id: Changelog,v 1.17 2001/08/27 06:30:57 parkerpine Exp $
+# $Id: Changelog,v 1.18 2001/08/28 09:57:01 parkerpine Exp $
+
+v0.16 (Tue Aug 28 11:56:17 CEST 2001)
+	+ 'make test' will no longer fail if URI::Find is not installed
 
 v0.15 (Mon Aug 27 08:30:18 CEST 2001)
 	+ an important change in indexing of MIME-parts:
