@@ -1,3 +1,9 @@
+v0.43 (Sat Oct 18 16:23:29 CEST 2003)
+
+    + Return values of File::Temp::tempfile() were 
+      mistakenly swapped 
+      (patch by Lyon Lemmens <lyon.lemmens@oracle.com>)
+
 v0.42 (Tue Oct 14 10:46:11 CEST 2003)
 
     + fixed "Call SETUP_CACHE() before calling new()..." warning

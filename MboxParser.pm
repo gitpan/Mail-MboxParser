@@ -80,7 +80,7 @@ use Fcntl qw/:seek/;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.42";
+$VERSION	= "0.43";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -239,7 +239,7 @@ EOC
 
 	# else
     else {
-        ($file_name, my $fh) = tempfile(UNLINK => 1) or croak <<EOC;
+        (my $fh, $file_name) = tempfile(UNLINK => 1) or croak <<EOC;
 Error: Could not create temporary file. This is very weird ($!).
 EOC
         if 		(ref $source eq 'SCALAR') 	{ print $fh ${$source} }
@@ -837,7 +837,7 @@ David Coppit for making me aware of C<Mail::Mbox::MessageParser> and designing i
 
 =head1 VERSION
 
-This is version 0.42.
+This is version 0.43.
 
 =head1 AUTHOR AND COPYRIGHT
 

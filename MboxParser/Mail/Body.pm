@@ -287,7 +287,7 @@ Unfortunately, quotes() can up to now only deal with '>' as quotation-marks.
 
 =head1 VERSION
 
-This is version 0.42.
+This is version 0.43.
 
 =head1 AUTHOR AND COPYRIGHT
 
