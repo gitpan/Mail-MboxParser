@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or 
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: MboxParser.pm,v 1.10 2001/07/06 06:13:07 parkerpine Exp $
+# Version: $Id: MboxParser.pm,v 1.11 2001/07/19 13:18:01 parkerpine Exp $
 
 package Mail::MboxParser;
 
@@ -15,7 +15,7 @@ use Mail::MboxParser::Mail;
 use strict;
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT);
-$VERSION	= "0.02";
+$VERSION	= "0.03";
 @EXPORT		= qw();
 $^W++;
 
@@ -52,6 +52,7 @@ sub get_messages {
 	my $self = shift;
 	my ($in_header, $in_body) = (0, 0);
 	my ($header, $body);
+	my (@header, @body);
 	my @messages;
 	my $h = $self->{READER};
 	
@@ -71,15 +72,18 @@ sub get_messages {
 		# just before entering next mail-header or running
 		# out of data, store message in Mail-object
 		if ((/^From (.*)\d{4}\n$/ or eof) and $got_header) {
+			$header = join '', @header;
+			$body 	= join '', @body;
 			my $m = Mail::MboxParser::Mail->new($header, $body);
 			push @messages, $m;
 			($in_header, $in_body) = (1, 0);
 			($header, $body) = (undef, undef);
+			undef @header; undef @body;
 			$got_header = 0;
 		}
 		if ($_) {
-			$header	.= $_ if $in_header and not $got_header; 
-			$body 	.= $_ if $in_body and $got_header;
+			push @header, $_ if $in_header and not $got_header; 
+			push @body, $_ if $in_body and $got_header;
 		}
 
 			
