@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.43";
+$VERSION    = "0.44";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -730,9 +730,9 @@ EOW
 	    $file = $args{code}->($self, $num, @{$args{args}}) 
 	}
                                                         
-        if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
-            $file = MIME::Words::decode_mimewords($file);
-        }
+	#if ($file =~ /=\?.*\?=/ and HAVE_MIMEWORDS) { # decode qp if possible
+	#    $file = MIME::Words::decode_mimewords($file);
+	#}
     
         return if defined $args{store_only} and $file !~ /$args{store_only}/;
 
@@ -892,15 +892,16 @@ sub _get_attachment {
 	    my ($type, $filename) = split /;\s*/, 
 	    $self->get_entities($num)->head->get('content-disposition');
 	    if ($type eq 'attachment') {
-		$filename =~ /filename\*?=(.*?''?)?(.*)$/;
-		($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+		if ($filename =~ /filename\*?=(.*?''?)?(.*)$/) {
+		    ($file = $2) =~ s/%([0-9A-Fa-f]{2})/chr(hex($1))/eg;
+		}
 	    }
 	}
     }
 
     return if not $file;
-
-    if ($file =~ /^=\?/ and HAVE_MIMEWORDS) { # decode qp if possible
+    
+    if ($file =~ /=\?.*\?=/ and HAVE_MIMEWORDS) { # decode qp if possible
 	$file = MIME::Words::decode_mimewords($file);
     }
     
@@ -1048,8 +1049,6 @@ sub AUTOLOAD {
 }
 
 sub DESTROY {
-    my $self = shift;
-    undef $self;
 }
 
 
@@ -1088,7 +1087,7 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.53.
+This is version 0.54.
 
 =head1 AUTHOR AND COPYRIGHT
 

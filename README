@@ -1,10 +1,5 @@
-There are now packages for PPM available as well! See below the bits on 
-installation to learn how to install those.
-
---------------------------------------------------------------------------------
-
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes.
-This document describes version 0.53.
+This document describes version 0.54.
 
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
 access to header fields, body and MIME-parts.  It is particularly easy to 
@@ -36,16 +31,6 @@ Then install:
 
 Win-users having an 'nmake' installed can also do the above, given the
 fact they replace 'make' with 'nmake' in the above list.
-
-Autoloader:
------------
-Read the Mail::MboxParser::Mail docs for invoking external methods.
-The autoloading-mechanism will take care that the below and other things
-will work:
-
-	$mail->effective_type; # from MIME::Entity
-
-Have a look into the eg-directory of the package for some (or one) example(s).
 
 Contact:
 --------

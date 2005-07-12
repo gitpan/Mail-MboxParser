@@ -1,10 +1,7 @@
-#! /usr/bin/perl -w
-
 use Test;
 use File::Spec;
 use strict;
 
-use lib '../..';
 use Mail::MboxParser;
 
 my $src = File::Spec->catfile('t', 'testbox');

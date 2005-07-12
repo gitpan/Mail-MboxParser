@@ -87,7 +87,7 @@ use IO::Seekable;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.53";
+$VERSION	= "0.54";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -563,7 +563,7 @@ sub next_message_old() {
 	    }
 	    else {
 		$self->{CURR_POS} = tell($h) - length;
-		return Mail::MboxParser::Mail->new([ @header ], [ @body ], \%newopts);
+		return Mail::MboxParser::Mail->new(\@header, \@body, \%newopts);
 	    }
 	}
 
@@ -978,7 +978,7 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.53.
+This is version 0.54.
 
 =head1 AUTHOR AND COPYRIGHT
 

@@ -1,3 +1,10 @@
+v0.54 (Tue Jul 12 09:40:20 CEST 2005)
+
+    + wrong assumptions about quoted-printable encoded
+      header-fields were made which lead to attachment 
+      filenames often not decoded properly
+      (Alper Sari <alper AT sabanciuniv DOT edu>)
+
 v0.53 (Thu Mar 31 09:27:59 CEST 2005)
 
     + Adds tests for pod-correctness and -coverage
