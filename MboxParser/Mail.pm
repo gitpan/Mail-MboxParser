@@ -4,7 +4,7 @@
 # This program is free software; you can redistribute it and/or
 # modify it under the same terms as Perl itself.
 
-# Version: $Id: Mail.pm,v 1.52 2002/03/01 10:09:32 parkerpine Exp $
+# Version: $Id: Mail.pm,v 1.53 2005/11/23 09:30:12 parkerpine Exp $
 
 package Mail::MboxParser::Mail;
 
@@ -42,7 +42,7 @@ use Carp;
 
 use strict;
 use vars qw($VERSION @EXPORT $AUTOLOAD $NL);
-$VERSION    = "0.44";
+$VERSION    = "0.45";
 @EXPORT     = qw();
 
 # we'll use it to store the MIME::Parser 
@@ -639,9 +639,13 @@ MIME-header. 'options' are specified in key/value pairs:
                |                | should return a filename for
                |                | the attachment
     -----------|----------------|-------------------------------
+    prefix     | prefix for     | all filenames are prefixed
+               | filenames      | with this value
+    -----------|----------------|-------------------------------
     args       | additional     | this array-ref will be passed  
                | arguments as   | on to the 'code' subroutine
                | array-ref      | as a dereferenced array
+
 
 Example:
 
@@ -702,6 +706,8 @@ sub store_attachment($@) {
     my $path = $args{path} || ".";
     $path =~ s/\/$//;
 
+    my $prefix = $args{prefix} || "";
+
     if (defined $args{code} && ref $args{code} ne 'CODE') {
 	carp <<EOW;	
 Warning: Second argument for store_attachment must be
@@ -741,14 +747,14 @@ EOW
 	}
 
 	local *ATT; 
-	if (open ATT, ">$path/$file") {
+	if (open ATT, ">$path/$prefix$file") {
 	    $self->store_entity_body($num, handle => \*ATT);
 	    close ATT ;
-	    return $file;
+	    return "$prefix$file";
 
 	}
 	else {
-	    $self->{LAST_ERR} = "Could not create $path/$file: $!";
+	    $self->{LAST_ERR} = "Could not create $path/$prefix$file: $!";
 	    return;
 	}
     }
@@ -1087,7 +1093,7 @@ C<Mail::MboxParser::Mail=HASH(...)>.
 
 =head1 VERSION
 
-This is version 0.54.
+This is version 0.55.
 
 =head1 AUTHOR AND COPYRIGHT
 

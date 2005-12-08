@@ -87,7 +87,7 @@ use IO::Seekable;
 
 use base qw(Exporter);
 use vars qw($VERSION @EXPORT @ISA);
-$VERSION	= "0.54";
+$VERSION	= "0.55";
 @EXPORT		= qw();
 @ISA		= qw(Mail::MboxParser::Base); 
 
@@ -978,7 +978,7 @@ it the way I needed to make it work for my module.
 
 =head1 VERSION
 
-This is version 0.54.
+This is version 0.55.
 
 =head1 AUTHOR AND COPYRIGHT
 

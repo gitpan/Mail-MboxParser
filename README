@@ -1,5 +1,5 @@
 Mail::MboxParser is a module for working with UNIX-flavoured mailboxes.
-This document describes version 0.54.
+This document describes version 0.55.
 
 Its purpose is to _easily_ extract messages from a mailbox with _simple_ 
 access to header fields, body and MIME-parts.  It is particularly easy to 

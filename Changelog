@@ -1,3 +1,10 @@
+v0.55 ( Thu Dec  8 11:12:15 CET 2005)
+
+    + new prefix option for store_attachment()
+      (patch by Christian Winter <thepoet AT a-za-z0-9 DOT de>)
+    + fixed a problem with skipping tests
+      (spotted by Sunit M. Das <sdas AT eeinternet DOT com>
+
 v0.54 (Tue Jul 12 09:40:20 CEST 2005)
 
     + wrong assumptions about quoted-printable encoded

@@ -10,12 +10,9 @@ BEGIN { plan tests => 1 };
 my $mb = Mail::MboxParser->new($src);
 my ($msg) = $mb->get_messages;
 
-if (&Mail::MboxParser::Mail::HAVE_MIMEWORDS) {
-    my $att = $msg->get_attachments;
-    ok(defined $msg->get_attachments("test þðüýçö characters.txt"));
-} else {
-    skip("Mime::Words not installed");
-}
+my $att = $msg->get_attachments;
+skip(&Mail::MboxParser::Mail::HAVE_MIMEWORDS ? 0 : "Mime::Words not installed",
+     defined $msg->get_attachments("test þðüýçö characters.txt"));
 
 
 
